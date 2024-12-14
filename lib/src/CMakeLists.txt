@@ -1,1 +1,1 @@
-add_library(compass_dns STATIC compass_dns.c)
+add_library(compass_lib STATIC compass_dns.h compass_dns.c)
