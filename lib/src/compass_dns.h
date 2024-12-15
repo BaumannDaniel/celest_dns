@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 const static u_int8_t QR_BYTE_MASK = 0b10000000;
-const static u_int8_t OPCODE_BYTE_MASK = 0x01111000;
+const static u_int8_t OPCODE_BYTE_MASK = 0b01111000;
 const static u_int8_t AA_BYTE_MASK = 0b00000100;
 const static u_int8_t TC_BYTE_MASK = 0b00000010;
 const static u_int8_t RD_BYTE_MASK = 0b00000001;
@@ -98,7 +98,7 @@ typedef struct DnsHeader {
     u_int16_t ar_count;
 } DnsHeader;
 
-void parse_dns_header(DnsHeader *dns_header, const char *buffer);
+void parse_dns_header(const u_int8_t *buffer, DnsHeader *dns_header);
 
 void dns_header_to_buffer(const DnsHeader *dns_header, u_int8_t *buffer);
 
@@ -112,7 +112,7 @@ void parse_dns_questions(
     u_int8_t *buffer_ptr,
     u_int16_t qd_count,
     DnsQuestion *dns_questions_ptr,
-    u_int16_t *questions_buffer_end_index_ptr = NULL
+    u_int16_t *questions_buffer_end_index_ptr
 );
 
 #endif //COMPASS_DNS_H

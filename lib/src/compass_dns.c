@@ -3,7 +3,7 @@
 
 #include "compass_dns.h"
 
-void parse_dns_header(DnsHeader *dns_header, const char *buffer) {
+void parse_dns_header(const u_int8_t *buffer, DnsHeader *dns_header) {
     memcpy(&dns_header->id, buffer, 2);
     dns_header->id = ntohs(dns_header->id);
     dns_header->qr = (buffer[2] & QR_BYTE_MASK) >> 7;
