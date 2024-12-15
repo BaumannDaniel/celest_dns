@@ -3,12 +3,12 @@
 
 #include <stdlib.h>
 
-const static u_int8_t QR_BYTE_MASK = 0x80;  // = 10000000
+const static u_int8_t QR_BYTE_MASK = 0x80; // = 10000000
 const static u_int8_t OPCODE_BYTE_MASK = 0x78; // = 01111000
-const static u_int8_t AA_BYTE_MASK = 0x04;  // = 00000100
-const static u_int8_t TC_BYTE_MASK = 0x02;  // = 00000010
-const static u_int8_t RD_BYTE_MASK = 0x01;  // = 00000001
-const static u_int8_t RA_BYTE_MASK = 0x80;  // = 10000000
+const static u_int8_t AA_BYTE_MASK = 0x04; // = 00000100
+const static u_int8_t TC_BYTE_MASK = 0x02; // = 00000010
+const static u_int8_t RD_BYTE_MASK = 0x01; // = 00000001
+const static u_int8_t RA_BYTE_MASK = 0x80; // = 10000000
 const static u_int8_t Z_BYTE_MASK = 0x70; // = 01110000
 const static u_int8_t RCODE_BYTE_MASK = 0x0f; // = 00001111
 
@@ -26,6 +26,44 @@ enum ResponseCode {
     NOT_IMPLEMENTED = 4,
     REFUSED = 5
 };
+
+enum BaseType {
+    A = 1,
+    NS = 2,
+    MD = 3,
+    MF = 4,
+    CNAME = 5,
+    SOA = 6,
+    MB = 7,
+    MG = 8,
+    MR = 9,
+    NONE = 10,
+    WKS = 11,
+    PTR = 12,
+    HINFO = 13,
+    MINFO = 14,
+    MX = 15,
+    TXT = 16
+};
+
+enum QType {
+    AXFR = 252,
+    MAILB = 253,
+    MAILA = 254,
+    ALL = 255
+};
+
+enum BaseClass {
+    IN = 1,
+    CS = 2,
+    CH = 3,
+    HS = 4
+};
+
+enum QClass {
+    ANY = 255
+};
+
 
 /**
 * Struct to represent a dns message headers
