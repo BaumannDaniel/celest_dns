@@ -12,6 +12,21 @@ const static u_int8_t RA_BYTE_MASK = 0x80;  // = 10000000
 const static u_int8_t Z_BYTE_MASK = 0x70; // = 01110000
 const static u_int8_t RCODE_BYTE_MASK = 0x0f; // = 00001111
 
+enum OperationCode {
+    QUERY = 0,
+    IQUERY = 1,
+    STATUS = 2
+};
+
+enum ResponseCode {
+    NO_ERROR = 0,
+    FORMAT_ERROR = 1,
+    SERVER_FAILURE = 2,
+    NAME_ERROR = 3,
+    NOT_IMPLEMENTED = 4,
+    REFUSED = 5
+};
+
 /**
 * Struct to represent a dns message headers
 *
@@ -47,6 +62,6 @@ typedef struct DnsHeader {
 
 DnsHeader parse_dns_header(const char *message_bytes);
 
-char* dns_header_to_bytes(DnsHeader dns_header);
+void dns_header_to_buffer(const DnsHeader *dns_header, u_int8_t *buffer);
 
 #endif //COMPASS_DNS_H
