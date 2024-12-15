@@ -102,4 +102,17 @@ void parse_dns_header(DnsHeader *dns_header, const char *buffer);
 
 void dns_header_to_buffer(const DnsHeader *dns_header, u_int8_t *buffer);
 
+typedef struct DnsQuestion {
+    char **domain_ptr;
+    u_int16_t q_type;
+    u_int16_t q_class;
+} DnsQuestion;
+
+void parse_dns_questions(
+    u_int8_t *buffer_ptr,
+    u_int16_t qd_count,
+    DnsQuestion *dns_questions_ptr,
+    u_int16_t *questions_buffer_end_index_ptr = NULL
+);
+
 #endif //COMPASS_DNS_H
