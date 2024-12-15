@@ -3,14 +3,14 @@
 
 #include <stdlib.h>
 
-const static u_int8_t QR_BYTE_MASK = 0x80; // = 10000000
-const static u_int8_t OPCODE_BYTE_MASK = 0x78; // = 01111000
-const static u_int8_t AA_BYTE_MASK = 0x04; // = 00000100
-const static u_int8_t TC_BYTE_MASK = 0x02; // = 00000010
-const static u_int8_t RD_BYTE_MASK = 0x01; // = 00000001
-const static u_int8_t RA_BYTE_MASK = 0x80; // = 10000000
-const static u_int8_t Z_BYTE_MASK = 0x70; // = 01110000
-const static u_int8_t RCODE_BYTE_MASK = 0x0f; // = 00001111
+const static u_int8_t QR_BYTE_MASK = 0b10000000;
+const static u_int8_t OPCODE_BYTE_MASK = 0x01111000;
+const static u_int8_t AA_BYTE_MASK = 0b00000100;
+const static u_int8_t TC_BYTE_MASK = 0b00000010;
+const static u_int8_t RD_BYTE_MASK = 0b00000001;
+const static u_int8_t RA_BYTE_MASK = 0b10000000;
+const static u_int8_t Z_BYTE_MASK = 0b01110000;
+const static u_int8_t RCODE_BYTE_MASK = 0b00001111;
 
 enum OperationCode {
     QUERY = 0,
