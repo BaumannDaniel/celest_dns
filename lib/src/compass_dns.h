@@ -60,7 +60,7 @@ typedef struct DnsHeader {
     u_int16_t ar_count;
 } DnsHeader;
 
-DnsHeader parse_dns_header(const char *message_bytes);
+void parse_dns_header(DnsHeader *dns_header, const char *buffer);
 
 void dns_header_to_buffer(const DnsHeader *dns_header, u_int8_t *buffer);
 

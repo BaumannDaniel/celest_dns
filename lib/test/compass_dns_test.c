@@ -11,7 +11,8 @@ void tearDown(void) {
 
 void parse_dns_header__successfully() {
     const u_int8_t dns_header_bytes[12] = { 0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04 };
-    const DnsHeader dns_header = parse_dns_header(dns_header_bytes);
+    DnsHeader dns_header;
+    parse_dns_header(&dns_header, dns_header_bytes);
     TEST_ASSERT_EQUAL(5, dns_header.id);
     TEST_ASSERT_EQUAL(1, dns_header.qr);
     TEST_ASSERT_EQUAL(1, dns_header.opcode);
