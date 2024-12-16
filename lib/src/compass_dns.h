@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#define DNS_HEADER_SIZE 12
+
 const static u_int8_t QR_BYTE_MASK = 0b10000000;
 const static u_int8_t OPCODE_BYTE_MASK = 0b01111000;
 const static u_int8_t AA_BYTE_MASK = 0b00000100;
@@ -11,6 +13,9 @@ const static u_int8_t RD_BYTE_MASK = 0b00000001;
 const static u_int8_t RA_BYTE_MASK = 0b10000000;
 const static u_int8_t Z_BYTE_MASK = 0b01110000;
 const static u_int8_t RCODE_BYTE_MASK = 0b00001111;
+
+const static u_int8_t QUESTION_PTR_BYTE_MASK = 0b11000000;
+const static u_int8_t QUESTION_PTR_OFFSET_BYTE_MASK = 0b00111111;
 
 enum OperationCode {
     QUERY = 0,
@@ -103,13 +108,13 @@ void parse_dns_header(const u_int8_t *buffer, DnsHeader *dns_header);
 void dns_header_to_buffer(const DnsHeader *dns_header, u_int8_t *buffer);
 
 typedef struct DnsQuestion {
-    char **domain_ptr;
+    char domain[254];
     u_int16_t q_type;
     u_int16_t q_class;
 } DnsQuestion;
 
 void parse_dns_questions(
-    u_int8_t *buffer_ptr,
+    const u_int8_t *buffer_ptr,
     u_int16_t qd_count,
     DnsQuestion *dns_questions_ptr,
     u_int16_t *questions_buffer_end_index_ptr
