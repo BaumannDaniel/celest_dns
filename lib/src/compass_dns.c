@@ -3,6 +3,8 @@
 
 #include "compass_dns.h"
 
+#define STRING_END '\0'
+
 void parse_dns_header(const u_int8_t *buffer, DnsHeader *dns_header) {
     memcpy(&dns_header->id, buffer, 2);
     dns_header->id = ntohs(dns_header->id);
@@ -68,12 +70,17 @@ void parse_dns_questions(
                 segment_indicator = buffer_ptr[buffer_index];
                 continue;
             }
-            if (domain_index > 0) dns_questions_ptr->domain[domain_index++] = ".";
+            if (domain_index > 0) {
+                dns_questions_ptr->domain[domain_index] = '.';
+                domain_index++;
+            }
             memcpy(&dns_questions_ptr->domain[domain_index], buffer_ptr + buffer_index, segment_indicator);
             domain_index += segment_indicator;
             buffer_index += segment_indicator;
-            segment_indicator = buffer_ptr[buffer_index++];
+            segment_indicator = buffer_ptr[buffer_index];
+            buffer_index++;
         }
+        dns_questions_ptr->domain[domain_index] = STRING_END;
         memcpy(&dns_questions_ptr->q_type, buffer_ptr + buffer_index, 2);
         dns_questions_ptr->q_type = ntohs(dns_questions_ptr->q_type);
         buffer_index += 2;
