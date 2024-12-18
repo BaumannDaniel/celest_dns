@@ -94,6 +94,27 @@ void parse_dns_questions__parse_multiple_questions() {
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
 }
 
+void parse_dns_questions__parse_questions_with_pointer() {
+    const u_int8_t dns_message_buffer[] = {
+        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x04, 't', 'e', 's', 't', 0x03,
+        'c', 'o', 'm', 0x00, 0x00, 0x01,
+        0x00, 0x01, 0xc0, 0x0c, 0x00, 0x05,
+        0x00, 0x02
+    };
+    DnsQuestion dns_questions[2];
+    u_int16_t dns_questions_end_ptr;
+    parse_dns_questions(dns_message_buffer, 2, dns_questions, &dns_questions_end_ptr);
+    TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
+    TEST_ASSERT_EQUAL(A, dns_questions[0].q_type);
+    TEST_ASSERT_EQUAL(IN, dns_questions[0].q_class);
+    TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[1].domain);
+    TEST_ASSERT_EQUAL(CNAME, dns_questions[1].q_type);
+    TEST_ASSERT_EQUAL(CS, dns_questions[1].q_class);
+    TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
+}
+
 void parse_dns_questions__parse_questions_with_end_pointer() {
     const u_int8_t dns_message_buffer[] = {
         0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
@@ -121,6 +142,7 @@ int main(void) {
     RUN_TEST(dns_header_to_buffer__successfully);
     RUN_TEST(parse_dns_questions__parse_single_question);
     RUN_TEST(parse_dns_questions__parse_multiple_questions);
+    RUN_TEST(parse_dns_questions__parse_questions_with_pointer);
     RUN_TEST(parse_dns_questions__parse_questions_with_end_pointer);
     return UNITY_END();
 }
