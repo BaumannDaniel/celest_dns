@@ -33,9 +33,9 @@ void parse_dns_header__successfully() {
 
 void dns_header_to_buffer__successfully() {
     const DnsHeader dns_header = {
-        .id = 257, .qr = 1, .opcode = STATUS,
+        .id = 257, .qr = 1, .opcode = OC_STATUS,
         .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = REFUSED,
+        .ra = 1, .z = 1, .rcode = RC_REFUSED,
         .qd_count = 4, .an_count = 3, .ns_count = 2,
         .ar_count = 1
     };
@@ -67,8 +67,8 @@ void parse_dns_questions__parse_single_question() {
     u_int16_t dns_questions_end_ptr;
     parse_dns_questions(dns_message_buffer, 1, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
-    TEST_ASSERT_EQUAL(A, dns_questions[0].q_type);
-    TEST_ASSERT_EQUAL(IN, dns_questions[0].q_class);
+    TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
+    TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
 }
 
@@ -86,11 +86,11 @@ void parse_dns_questions__parse_multiple_questions() {
     u_int16_t dns_questions_end_ptr;
     parse_dns_questions(dns_message_buffer, 2, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
-    TEST_ASSERT_EQUAL(A, dns_questions[0].q_type);
-    TEST_ASSERT_EQUAL(IN, dns_questions[0].q_class);
+    TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
+    TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
     TEST_ASSERT_EQUAL_STRING("www.ab.en", dns_questions[1].domain);
-    TEST_ASSERT_EQUAL(CNAME, dns_questions[1].q_type);
-    TEST_ASSERT_EQUAL(CS, dns_questions[1].q_class);
+    TEST_ASSERT_EQUAL(TYPE_CNAME, dns_questions[1].q_type);
+    TEST_ASSERT_EQUAL(CLASS_CS, dns_questions[1].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
 }
 
@@ -107,11 +107,11 @@ void parse_dns_questions__parse_questions_with_pointer() {
     u_int16_t dns_questions_end_ptr;
     parse_dns_questions(dns_message_buffer, 2, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
-    TEST_ASSERT_EQUAL(A, dns_questions[0].q_type);
-    TEST_ASSERT_EQUAL(IN, dns_questions[0].q_class);
+    TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
+    TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[1].domain);
-    TEST_ASSERT_EQUAL(CNAME, dns_questions[1].q_type);
-    TEST_ASSERT_EQUAL(CS, dns_questions[1].q_class);
+    TEST_ASSERT_EQUAL(TYPE_CNAME, dns_questions[1].q_type);
+    TEST_ASSERT_EQUAL(CLASS_CS, dns_questions[1].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
 }
 
@@ -128,11 +128,11 @@ void parse_dns_questions__parse_questions_with_end_pointer() {
     u_int16_t dns_questions_end_ptr;
     parse_dns_questions(dns_message_buffer, 2, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
-    TEST_ASSERT_EQUAL(A, dns_questions[0].q_type);
-    TEST_ASSERT_EQUAL(IN, dns_questions[0].q_class);
+    TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
+    TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
     TEST_ASSERT_EQUAL_STRING("www.test.com", dns_questions[1].domain);
-    TEST_ASSERT_EQUAL(CNAME, dns_questions[1].q_type);
-    TEST_ASSERT_EQUAL(CS, dns_questions[1].q_class);
+    TEST_ASSERT_EQUAL(TYPE_CNAME, dns_questions[1].q_type);
+    TEST_ASSERT_EQUAL(CLASS_CS, dns_questions[1].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
 }
 

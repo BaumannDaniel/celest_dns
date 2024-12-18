@@ -17,57 +17,57 @@ const static u_int8_t RCODE_BYTE_MASK = 0b00001111;
 const static u_int8_t QUESTION_PTR_BYTE_MASK = 0b11000000;
 const static u_int8_t QUESTION_PTR_OFFSET_BYTE_MASK = 0b00111111;
 
-enum OperationCode {
-    QUERY = 0,
-    IQUERY = 1,
-    STATUS = 2
-};
+typedef enum OperationCode {
+    OC_QUERY = 0,
+    OC_IQUERY = 1,
+    OC_STATUS = 2
+} OperationCode;
 
-enum ResponseCode {
-    NO_ERROR = 0,
-    FORMAT_ERROR = 1,
-    SERVER_FAILURE = 2,
-    NAME_ERROR = 3,
-    NOT_IMPLEMENTED = 4,
-    REFUSED = 5
-};
+typedef enum ResponseCode {
+    RC_NO_ERROR = 0,
+    RC_FORMAT_ERROR = 1,
+    RC_SERVER_FAILURE = 2,
+    RC_NAME_ERROR = 3,
+    RC_NOT_IMPLEMENTED = 4,
+    RC_REFUSED = 5
+} ResponseCode;
 
-enum BaseType {
-    A = 1,
-    NS = 2,
-    MD = 3,
-    MF = 4,
-    CNAME = 5,
-    SOA = 6,
-    MB = 7,
-    MG = 8,
-    MR = 9,
-    NONE = 10,
-    WKS = 11,
-    PTR = 12,
-    HINFO = 13,
-    MINFO = 14,
-    MX = 15,
-    TXT = 16
-};
+typedef enum BaseType {
+    TYPE_A = 1,
+    TYPE_NS = 2,
+    TYPE_MD = 3,
+    TYPE_MF = 4,
+    TYPE_CNAME = 5,
+    TYPE_SOA = 6,
+    TYPE_MB = 7,
+    TYPE_MG = 8,
+    TYPE_MR = 9,
+    TYPE_NONE = 10,
+    TYPE_WKS = 11,
+    TYPE_PTR = 12,
+    TYPE_HINFO = 13,
+    TYPE_MINFO = 14,
+    TYPE_MX = 15,
+    TYPE_TXT = 16
+} BaseType;
 
-enum QType {
-    AXFR = 252,
-    MAILB = 253,
-    MAILA = 254,
-    ALL = 255
-};
+typedef enum QType {
+    TYPE_AXFR = 252,
+    TYPE_MAILB = 253,
+    TYPE_MAILA = 254,
+    TYPE_ALL = 255
+} QType;
 
-enum BaseClass {
-    IN = 1,
-    CS = 2,
-    CH = 3,
-    HS = 4
-};
+typedef enum BaseClass {
+    CLASS_IN = 1,
+    CLASS_CS = 2,
+    CLASS_CH = 3,
+    CLASS_HS = 4
+} BaseClass;
 
-enum QClass {
-    ANY = 255
-};
+typedef enum QClass {
+    CLASS_ANY = 255
+} QClass;
 
 
 /**
