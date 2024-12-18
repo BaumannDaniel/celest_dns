@@ -63,9 +63,26 @@ void dns_header_to_buffer__successfully() {
     TEST_ASSERT_EQUAL(0x01, buffer[11]);
 }
 
+void parse_dns_questions__parse_single_question() {
+    const u_int8_t dns_message_buffer[] = {
+        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x04, 't', 'e', 's', 't', 0x03,
+        'c', 'o', 'm', 0x00, 0x00, 0x01, 0x00,
+        0x01
+    };
+    DnsQuestion dns_questions[1];
+    u_int16_t dns_questions_end_ptr;
+    parse_dns_questions(dns_message_buffer, 1, dns_questions, &dns_questions_end_ptr);
+    TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
+    TEST_ASSERT_EQUAL(1, dns_questions[0].q_type);
+    TEST_ASSERT_EQUAL(1, dns_questions[0].q_class);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(parse_dns_header__successfully);
     RUN_TEST(dns_header_to_buffer__successfully);
+    RUN_TEST(parse_dns_questions__parse_single_question);
     return UNITY_END();
 }
