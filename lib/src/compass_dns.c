@@ -59,15 +59,19 @@ void parse_dns_questions(
     for (u_int16_t i = 0; i < qd_count; i++) {
         dns_questions_ptr += i;
         u_int16_t domain_index = 0;
+        // caches buffer index when buffer index is set to domain pointer
+        u_int16_t domain_pointer_end_index = 0;
         u_int8_t segment_indicator = buffer_ptr[buffer_index];
         buffer_index++;
         while (segment_indicator > 0) {
             if (segment_indicator & QUESTION_PTR_BYTE_MASK) {
                 const u_int16_t offset = (segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK)
                                          * 256
-                                         * buffer_ptr[buffer_index];
+                                         + buffer_ptr[buffer_index];
+                domain_pointer_end_index = buffer_index + 1;
                 buffer_index = offset;
                 segment_indicator = buffer_ptr[buffer_index];
+                buffer_index++;
                 continue;
             }
             if (domain_index > 0) {
@@ -80,6 +84,7 @@ void parse_dns_questions(
             segment_indicator = buffer_ptr[buffer_index];
             buffer_index++;
         }
+        if (domain_pointer_end_index > 0) buffer_index = domain_pointer_end_index;
         dns_questions_ptr->domain[domain_index] = STRING_END;
         memcpy(&dns_questions_ptr->q_type, buffer_ptr + buffer_index, 2);
         dns_questions_ptr->q_type = ntohs(dns_questions_ptr->q_type);
