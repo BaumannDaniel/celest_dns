@@ -115,7 +115,6 @@ typedef struct DnsQuestion {
 
 void parse_dns_questions(
     const u_int8_t *buffer_ptr,
-    u_int16_t qd_count,
     DnsQuestion *dns_questions_ptr,
     u_int16_t *questions_buffer_end_index_ptr
 );

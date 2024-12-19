@@ -49,12 +49,16 @@ void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr)
     memcpy(buffer_ptr + 10, &ar_count, 2);
 }
 
+static u_int16_t big_endian_chars_to_short(const uint8_t most_sig_char, const uint8_t least_sig_char) {
+    return most_sig_char * 256 + least_sig_char;
+}
+
 void parse_dns_questions(
     const u_int8_t *buffer_ptr,
-    const u_int16_t qd_count,
     DnsQuestion *dns_questions_ptr,
     u_int16_t *questions_buffer_end_index_ptr
 ) {
+    const u_int16_t qd_count = big_endian_chars_to_short(buffer_ptr[4], buffer_ptr[5]);
     u_int16_t buffer_index = DNS_HEADER_SIZE;
     for (u_int16_t i = 0; i < qd_count; i++) {
         dns_questions_ptr += i;
@@ -65,9 +69,10 @@ void parse_dns_questions(
         buffer_index++;
         while (segment_indicator > 0) {
             if (segment_indicator & QUESTION_PTR_BYTE_MASK) {
-                const u_int16_t offset = (segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK)
-                                         * 256
-                                         + buffer_ptr[buffer_index];
+                const u_int16_t offset = big_endian_chars_to_short(
+                    segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK,
+                    buffer_ptr[buffer_index]
+                );
                 domain_pointer_end_index = buffer_index + 1;
                 buffer_index = offset;
                 segment_indicator = buffer_ptr[buffer_index];

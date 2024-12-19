@@ -65,7 +65,7 @@ void parse_dns_questions__parse_single_question() {
     };
     DnsQuestion dns_questions[1];
     u_int16_t dns_questions_end_ptr;
-    parse_dns_questions(dns_message_buffer, 1, dns_questions, &dns_questions_end_ptr);
+    parse_dns_questions(dns_message_buffer, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
     TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
@@ -74,7 +74,7 @@ void parse_dns_questions__parse_single_question() {
 
 void parse_dns_questions__parse_multiple_questions() {
     const u_int8_t dns_message_buffer[] = {
-        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
+        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x02,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x04, 't', 'e', 's', 't', 0x03,
         'c', 'o', 'm', 0x00, 0x00, 0x01, 0x00,
@@ -84,7 +84,7 @@ void parse_dns_questions__parse_multiple_questions() {
     };
     DnsQuestion dns_questions[2];
     u_int16_t dns_questions_end_ptr;
-    parse_dns_questions(dns_message_buffer, 2, dns_questions, &dns_questions_end_ptr);
+    parse_dns_questions(dns_message_buffer, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
     TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
@@ -96,7 +96,7 @@ void parse_dns_questions__parse_multiple_questions() {
 
 void parse_dns_questions__parse_questions_with_pointer() {
     const u_int8_t dns_message_buffer[] = {
-        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
+        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x02,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x04, 't', 'e', 's', 't', 0x03,
         'c', 'o', 'm', 0x00, 0x00, 0x01,
@@ -105,7 +105,7 @@ void parse_dns_questions__parse_questions_with_pointer() {
     };
     DnsQuestion dns_questions[2];
     u_int16_t dns_questions_end_ptr;
-    parse_dns_questions(dns_message_buffer, 2, dns_questions, &dns_questions_end_ptr);
+    parse_dns_questions(dns_message_buffer, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
     TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
@@ -117,7 +117,7 @@ void parse_dns_questions__parse_questions_with_pointer() {
 
 void parse_dns_questions__parse_questions_with_end_pointer() {
     const u_int8_t dns_message_buffer[] = {
-        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
+        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x02,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x04, 't', 'e', 's', 't', 0x03,
         'c', 'o', 'm', 0x00, 0x00, 0x01,
@@ -126,7 +126,7 @@ void parse_dns_questions__parse_questions_with_end_pointer() {
     };
     DnsQuestion dns_questions[2];
     u_int16_t dns_questions_end_ptr;
-    parse_dns_questions(dns_message_buffer, 2, dns_questions, &dns_questions_end_ptr);
+    parse_dns_questions(dns_message_buffer, dns_questions, &dns_questions_end_ptr);
     TEST_ASSERT_EQUAL_STRING("test.com", dns_questions[0].domain);
     TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
