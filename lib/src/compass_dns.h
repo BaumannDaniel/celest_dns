@@ -103,9 +103,9 @@ typedef struct DnsHeader {
     u_int16_t ar_count;
 } DnsHeader;
 
-void parse_dns_header(const u_int8_t *buffer, DnsHeader *dns_header);
+void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr);
 
-void dns_header_to_buffer(const DnsHeader *dns_header, u_int8_t *buffer);
+void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr);
 
 typedef struct DnsQuestion {
     char domain[254];
