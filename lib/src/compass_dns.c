@@ -5,9 +5,12 @@
 
 #define STRING_END '\0'
 
+static u_int16_t big_endian_chars_to_short(const uint8_t most_sig_char, const uint8_t least_sig_char) {
+    return most_sig_char * 256 + least_sig_char;
+}
+
 void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr) {
-    memcpy(&dns_header_ptr->id, buffer_ptr, 2);
-    dns_header_ptr->id = ntohs(dns_header_ptr->id);
+    dns_header_ptr->id = big_endian_chars_to_short(buffer_ptr[0], buffer_ptr[1]);
     dns_header_ptr->qr = (buffer_ptr[2] & QR_BYTE_MASK) >> 7;
     dns_header_ptr->opcode = (buffer_ptr[2] & OPCODE_BYTE_MASK) >> 3;
     dns_header_ptr->aa = (buffer_ptr[2] & AA_BYTE_MASK) >> 2;
@@ -16,14 +19,10 @@ void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr) {
     dns_header_ptr->ra = (buffer_ptr[3] & RA_BYTE_MASK) >> 7;
     dns_header_ptr->z = (buffer_ptr[3] & Z_BYTE_MASK) >> 4;
     dns_header_ptr->rcode = buffer_ptr[3] & RCODE_BYTE_MASK;
-    memcpy(&dns_header_ptr->qd_count, buffer_ptr + 4, 2);
-    dns_header_ptr->qd_count = ntohs(dns_header_ptr->qd_count);
-    memcpy(&dns_header_ptr->an_count, buffer_ptr + 6, 2);
-    dns_header_ptr->an_count = ntohs(dns_header_ptr->an_count);
-    memcpy(&dns_header_ptr->ns_count, buffer_ptr + 8, 2);
-    dns_header_ptr->ns_count = ntohs(dns_header_ptr->ns_count);
-    memcpy(&dns_header_ptr->ar_count, buffer_ptr + 10, 2);
-    dns_header_ptr->ar_count = ntohs(dns_header_ptr->ar_count);
+    dns_header_ptr->qd_count = big_endian_chars_to_short(buffer_ptr[4], buffer_ptr[5]);
+    dns_header_ptr->an_count = big_endian_chars_to_short(buffer_ptr[6], buffer_ptr[7]);
+    dns_header_ptr->ns_count = big_endian_chars_to_short(buffer_ptr[8], buffer_ptr[9]);
+    dns_header_ptr->ar_count = big_endian_chars_to_short(buffer_ptr[10], buffer_ptr[11]);
 }
 
 void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr) {
@@ -47,10 +46,6 @@ void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr)
     memcpy(buffer_ptr + 8, &ns_count, 2);
     const u_int16_t ar_count = htons(dns_header_ptr->ar_count);
     memcpy(buffer_ptr + 10, &ar_count, 2);
-}
-
-static u_int16_t big_endian_chars_to_short(const uint8_t most_sig_char, const uint8_t least_sig_char) {
-    return most_sig_char * 256 + least_sig_char;
 }
 
 void parse_dns_questions(
