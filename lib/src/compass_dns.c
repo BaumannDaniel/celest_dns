@@ -13,6 +13,70 @@ static void short_to_big_endian_chars(u_int8_t *big_endian_chars_ptr, const u_in
     big_endian_chars_ptr[0] = (value - big_endian_chars_ptr[1]) / 256;
 }
 
+static u_int16_t calc_domain_size(const u_int8_t *buffer_ptr, u_int16_t buffer_index) {
+    u_int16_t domain_length = 0;
+    u_int8_t segment_indicator = buffer_ptr[buffer_index];
+    buffer_index++;
+    while (segment_indicator > 0) {
+        if (segment_indicator & QUESTION_PTR_BYTE_MASK) {
+            const u_int16_t offset = big_endian_chars_to_short(
+                segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK,
+                buffer_ptr[buffer_index]
+            );
+            buffer_index = offset;
+            segment_indicator = buffer_ptr[buffer_index];
+            buffer_index++;
+            continue;
+        }
+        // account for '.' separator
+        if (domain_length > 0) domain_length++;
+        domain_length += segment_indicator;
+        buffer_index += segment_indicator;
+        segment_indicator = buffer_ptr[buffer_index];
+        buffer_index++;
+    }
+    // accounting for string end char
+    return domain_length + 1;
+}
+
+static void retrieve_domain(
+    const u_int8_t *buffer_ptr,
+    u_int16_t buffer_index,
+    char *domain_ptr,
+    u_int16_t *domain_end_ptr
+) {
+    u_int16_t domain_index = 0;
+    // caches buffer index when buffer index is set to domain pointer
+    u_int16_t domain_pointer_end_index = 0;
+    u_int8_t segment_indicator = buffer_ptr[buffer_index];
+    buffer_index++;
+    while (segment_indicator > 0) {
+        if (segment_indicator & QUESTION_PTR_BYTE_MASK) {
+            const u_int16_t offset = big_endian_chars_to_short(
+                segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK,
+                buffer_ptr[buffer_index]
+            );
+            domain_pointer_end_index = buffer_index + 1;
+            buffer_index = offset;
+            segment_indicator = buffer_ptr[buffer_index];
+            buffer_index++;
+            continue;
+        }
+        if (domain_index > 0) {
+            domain_ptr[domain_index] = '.';
+            domain_index++;
+        }
+        memcpy(domain_ptr + domain_index, buffer_ptr + buffer_index, segment_indicator);
+        domain_index += segment_indicator;
+        buffer_index += segment_indicator;
+        segment_indicator = buffer_ptr[buffer_index];
+        buffer_index++;
+    }
+    domain_ptr[domain_index] = STRING_END;
+    if (domain_pointer_end_index > 0) buffer_index = domain_pointer_end_index;
+    *domain_end_ptr = buffer_index - 1;
+}
+
 void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr) {
     dns_header_ptr->id = big_endian_chars_to_short(buffer_ptr[0], buffer_ptr[1]);
     dns_header_ptr->qr = (buffer_ptr[2] & QR_BYTE_MASK) >> 7;
@@ -56,35 +120,10 @@ void parse_dns_questions(
     u_int16_t buffer_index = DNS_HEADER_SIZE;
     for (u_int16_t i = 0; i < qd_count; i++) {
         dns_questions_ptr += i;
-        u_int16_t domain_index = 0;
-        // caches buffer index when buffer index is set to domain pointer
-        u_int16_t domain_pointer_end_index = 0;
-        u_int8_t segment_indicator = buffer_ptr[buffer_index];
+        dns_questions_ptr->domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        dns_questions_ptr->domain = calloc(dns_questions_ptr->domain_size, sizeof(char));
+        retrieve_domain(buffer_ptr, buffer_index, dns_questions_ptr->domain, &buffer_index);
         buffer_index++;
-        while (segment_indicator > 0) {
-            if (segment_indicator & QUESTION_PTR_BYTE_MASK) {
-                const u_int16_t offset = big_endian_chars_to_short(
-                    segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK,
-                    buffer_ptr[buffer_index]
-                );
-                domain_pointer_end_index = buffer_index + 1;
-                buffer_index = offset;
-                segment_indicator = buffer_ptr[buffer_index];
-                buffer_index++;
-                continue;
-            }
-            if (domain_index > 0) {
-                dns_questions_ptr->domain[domain_index] = '.';
-                domain_index++;
-            }
-            memcpy(&dns_questions_ptr->domain[domain_index], buffer_ptr + buffer_index, segment_indicator);
-            domain_index += segment_indicator;
-            buffer_index += segment_indicator;
-            segment_indicator = buffer_ptr[buffer_index];
-            buffer_index++;
-        }
-        if (domain_pointer_end_index > 0) buffer_index = domain_pointer_end_index;
-        dns_questions_ptr->domain[domain_index] = STRING_END;
         dns_questions_ptr->q_type = big_endian_chars_to_short(buffer_ptr[buffer_index], buffer_ptr[buffer_index + 1]);
         buffer_index += 2;
         dns_questions_ptr->q_class = big_endian_chars_to_short(buffer_ptr[buffer_index], buffer_ptr[buffer_index + 1]);

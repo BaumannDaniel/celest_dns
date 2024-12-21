@@ -108,7 +108,8 @@ void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr);
 void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr);
 
 typedef struct DnsQuestion {
-    char domain[254];
+    char *domain;
+    u_int16_t domain_size;
     u_int16_t q_type;
     u_int16_t q_class;
 } DnsQuestion;
