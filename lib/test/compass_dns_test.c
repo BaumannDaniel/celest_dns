@@ -70,6 +70,7 @@ void parse_dns_questions__parse_single_question() {
     TEST_ASSERT_EQUAL(TYPE_A, dns_questions[0].q_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_questions[0].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
+    free_dns_questions(dns_questions, 1);
 }
 
 void parse_dns_questions__parse_multiple_questions() {
@@ -92,6 +93,7 @@ void parse_dns_questions__parse_multiple_questions() {
     TEST_ASSERT_EQUAL(TYPE_CNAME, dns_questions[1].q_type);
     TEST_ASSERT_EQUAL(CLASS_CS, dns_questions[1].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
+    free_dns_questions(dns_questions, 2);
 }
 
 void parse_dns_questions__parse_questions_with_pointer() {
@@ -113,6 +115,7 @@ void parse_dns_questions__parse_questions_with_pointer() {
     TEST_ASSERT_EQUAL(TYPE_CNAME, dns_questions[1].q_type);
     TEST_ASSERT_EQUAL(CLASS_CS, dns_questions[1].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
+    free_dns_questions(dns_questions, 2);
 }
 
 void parse_dns_questions__parse_questions_with_end_pointer() {
@@ -134,6 +137,7 @@ void parse_dns_questions__parse_questions_with_end_pointer() {
     TEST_ASSERT_EQUAL(TYPE_CNAME, dns_questions[1].q_type);
     TEST_ASSERT_EQUAL(CLASS_CS, dns_questions[1].q_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_questions_end_ptr);
+    free_dns_questions(dns_questions, 2);
 }
 
 int main(void) {

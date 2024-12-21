@@ -120,4 +120,8 @@ void parse_dns_questions(
     u_int16_t *questions_buffer_end_index_ptr
 );
 
+void free_dns_question(const DnsQuestion *dns_question);
+
+void free_dns_questions(const DnsQuestion *dns_questions, const u_int16_t qd_count);
+
 #endif //COMPASS_DNS_H

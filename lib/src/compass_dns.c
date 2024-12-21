@@ -131,3 +131,13 @@ void parse_dns_questions(
     }
     *questions_buffer_end_index_ptr = buffer_index - 1;
 }
+
+void free_dns_question(const DnsQuestion *dns_question) {
+    free(dns_question->domain);
+}
+
+void free_dns_questions(const DnsQuestion *dns_questions, const u_int16_t qd_count) {
+    for (int i = 0; i < qd_count; i++) {
+        free_dns_question(dns_questions + i);
+    }
+}
