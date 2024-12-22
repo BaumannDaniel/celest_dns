@@ -156,6 +156,7 @@ void parse_dns_records__parse_single_record() {
     TEST_ASSERT_EQUAL(TYPE_A, dns_records[0].r_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_records[0].r_class);
     TEST_ASSERT_EQUAL(sizeof(dns_message_buffer) - 1, dns_records_end_ptr);
+    free_dns_records(dns_records, 1);
 }
 
 int main(void) {

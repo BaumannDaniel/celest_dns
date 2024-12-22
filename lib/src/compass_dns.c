@@ -139,11 +139,12 @@ void parse_dns_questions(
     *questions_buffer_end_index_ptr = buffer_index - 1;
 }
 
-void free_dns_question(const DnsQuestion *dns_question) {
+void free_dns_question(DnsQuestion *dns_question) {
     free(dns_question->domain);
+    dns_question->domain = NULL;
 }
 
-void free_dns_questions(const DnsQuestion *dns_questions, const u_int16_t qd_count) {
+void free_dns_questions(DnsQuestion *dns_questions, const u_int16_t qd_count) {
     for (int i = 0; i < qd_count; i++) {
         free_dns_question(dns_questions + i);
     }
@@ -175,4 +176,17 @@ void parse_dns_records(
         buffer_index += dns_record_ptr->rd_length;
     }
     *records_buffer_end_index_ptr = buffer_index - 1;
+}
+
+void free_dns_record(DnsRecord *dns_record) {
+    free(dns_record->domain);
+    dns_record->domain = NULL;
+    free(dns_record->r_data);
+    dns_record->r_data = NULL;
+}
+
+void free_dns_records(DnsRecord *dns_record, const u_int16_t record_count) {
+    for (int i = 0; i < record_count; i++) {
+        free_dns_record(dns_record + i);
+    }
 }

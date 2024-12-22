@@ -120,9 +120,9 @@ void parse_dns_questions(
     u_int16_t *questions_buffer_end_index_ptr
 );
 
-void free_dns_question(const DnsQuestion *dns_question);
+void free_dns_question(DnsQuestion *dns_question);
 
-void free_dns_questions(const DnsQuestion *dns_questions, u_int16_t qd_count);
+void free_dns_questions(DnsQuestion *dns_questions, u_int16_t qd_count);
 
 typedef struct DnsRecord {
     char *domain;
@@ -141,5 +141,9 @@ void parse_dns_records(
     u_int16_t buffer_index,
     u_int16_t record_count
 );
+
+void free_dns_record(DnsRecord *dns_record);
+
+void free_dns_records(DnsRecord *dns_record, u_int16_t record_count);
 
 #endif //COMPASS_DNS_H
