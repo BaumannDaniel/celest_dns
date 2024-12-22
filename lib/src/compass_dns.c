@@ -13,6 +13,13 @@ static void short_to_big_endian_chars(u_int8_t *big_endian_chars_ptr, const u_in
     big_endian_chars_ptr[0] = (value - big_endian_chars_ptr[1]) / 256;
 }
 
+static u_int16_t big_endian_chars_to_u_int32(const u_int8_t *big_endian_chars_ptr) {
+    return big_endian_chars_ptr[0] * 16777216
+           + big_endian_chars_ptr[1] * 65536
+           + big_endian_chars_ptr[2] * 256
+           + big_endian_chars_ptr[3];
+}
+
 static u_int16_t calc_domain_size(const u_int8_t *buffer_ptr, u_int16_t buffer_index) {
     u_int16_t domain_length = 0;
     u_int8_t segment_indicator = buffer_ptr[buffer_index];
@@ -140,4 +147,32 @@ void free_dns_questions(const DnsQuestion *dns_questions, const u_int16_t qd_cou
     for (int i = 0; i < qd_count; i++) {
         free_dns_question(dns_questions + i);
     }
+}
+
+void parse_dns_records(
+    const u_int8_t *buffer_ptr,
+    DnsRecord *dns_record_ptr,
+    u_int16_t *records_buffer_end_index_ptr,
+    u_int16_t buffer_index,
+    const u_int16_t record_count
+) {
+    for (u_int16_t i = 0; i < record_count; i++) {
+        dns_record_ptr += i;
+        dns_record_ptr->domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        dns_record_ptr->domain = calloc(dns_record_ptr->domain_size, sizeof(char));
+        retrieve_domain(buffer_ptr, buffer_index, dns_record_ptr->domain, &buffer_index);
+        buffer_index++;
+        dns_record_ptr->r_type = big_endian_chars_to_short(buffer_ptr[buffer_index], buffer_ptr[buffer_index + 1]);
+        buffer_index += 2;
+        dns_record_ptr->r_class = big_endian_chars_to_short(buffer_ptr[buffer_index], buffer_ptr[buffer_index + 1]);
+        buffer_index += 2;
+        dns_record_ptr->ttl = big_endian_chars_to_u_int32(buffer_ptr + buffer_index);
+        buffer_index += 4;
+        dns_record_ptr->rd_length = big_endian_chars_to_short(buffer_ptr[buffer_index], buffer_ptr[buffer_index + 1]);
+        buffer_index += 2;
+        dns_record_ptr->r_data = calloc(dns_record_ptr->rd_length, sizeof(char));
+        memcpy(dns_record_ptr->r_data, buffer_ptr + buffer_index, dns_record_ptr->rd_length);
+        buffer_index += dns_record_ptr->rd_length;
+    }
+    *records_buffer_end_index_ptr = buffer_index - 1;
 }

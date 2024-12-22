@@ -122,6 +122,24 @@ void parse_dns_questions(
 
 void free_dns_question(const DnsQuestion *dns_question);
 
-void free_dns_questions(const DnsQuestion *dns_questions, const u_int16_t qd_count);
+void free_dns_questions(const DnsQuestion *dns_questions, u_int16_t qd_count);
+
+typedef struct DnsRecord {
+    char *domain;
+    u_int16_t domain_size;
+    u_int16_t r_type;
+    u_int16_t r_class;
+    u_int32_t ttl;
+    u_int16_t rd_length;
+    u_int8_t *r_data;
+} DnsRecord;
+
+void parse_dns_records(
+    const u_int8_t *buffer_ptr,
+    DnsRecord *dns_record_ptr,
+    u_int16_t *records_buffer_end_index_ptr,
+    u_int16_t buffer_index,
+    u_int16_t record_count
+);
 
 #endif //COMPASS_DNS_H
