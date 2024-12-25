@@ -146,4 +146,16 @@ void free_dns_record(DnsRecord *dns_record);
 
 void free_dns_records(DnsRecord *dns_record, u_int16_t record_count);
 
+typedef struct DnsMessage {
+    DnsHeader header;
+    DnsQuestion *questions;
+    DnsRecord *answers;
+    DnsRecord *authorities;
+    DnsRecord *additional;
+} DnsMessage;
+
+void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr);
+
+void free_dns_message(DnsMessage *dns_message);
+
 #endif //COMPASS_DNS_H

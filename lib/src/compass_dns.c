@@ -190,3 +190,76 @@ void free_dns_records(DnsRecord *dns_record, const u_int16_t record_count) {
         free_dns_record(dns_record + i);
     }
 }
+
+void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
+    parse_dns_header(buffer_ptr, &dns_message_ptr->header);
+    u_int16_t buffer_index = DNS_HEADER_SIZE;
+    if (dns_message_ptr->header.qd_count > 0) {
+        dns_message_ptr->questions = calloc(dns_message_ptr->header.qd_count, sizeof(DnsQuestion));
+        parse_dns_questions(buffer_ptr, dns_message_ptr->questions, &buffer_index);
+        buffer_index++;
+    } else {
+        dns_message_ptr->questions = NULL;
+    }
+    if (dns_message_ptr->header.an_count > 0) {
+        dns_message_ptr->answers = calloc(dns_message_ptr->header.an_count, sizeof(DnsRecord));
+        parse_dns_records(
+            buffer_ptr,
+            dns_message_ptr->answers,
+            &buffer_index,
+            buffer_index,
+            dns_message_ptr->header.an_count
+        );
+        buffer_index++;
+    } else {
+        dns_message_ptr->answers = NULL;
+    }
+    if (dns_message_ptr->header.ns_count > 0) {
+        dns_message_ptr->authorities = calloc(dns_message_ptr->header.ns_count, sizeof(DnsRecord));
+        parse_dns_records(
+            buffer_ptr,
+            dns_message_ptr->authorities,
+            &buffer_index,
+            buffer_index,
+            dns_message_ptr->header.ns_count
+        );
+        buffer_index++;
+    } else {
+        dns_message_ptr->authorities = NULL;
+    }
+    if (dns_message_ptr->header.ar_count > 0) {
+        dns_message_ptr->additional = calloc(dns_message_ptr->header.ar_count, sizeof(DnsRecord));
+        parse_dns_records(
+            buffer_ptr,
+            dns_message_ptr->additional,
+            &buffer_index,
+            buffer_index,
+            dns_message_ptr->header.ar_count
+        );
+    } else {
+        dns_message_ptr->additional = NULL;
+    }
+}
+
+void free_dns_message(DnsMessage *dns_message) {
+    if (dns_message->header.qd_count > 0) {
+        free_dns_questions(dns_message->questions, dns_message->header.qd_count);
+        free(dns_message->questions);
+        dns_message->questions = NULL;
+    }
+    if (dns_message->header.an_count > 0) {
+        free_dns_records(dns_message->answers, dns_message->header.an_count);
+        free(dns_message->answers);
+        dns_message->answers = NULL;
+    }
+    if (dns_message->header.ns_count > 0) {
+        free_dns_records(dns_message->authorities, dns_message->header.ns_count);
+        free(dns_message->authorities);
+        dns_message->authorities = NULL;
+    }
+    if (dns_message->header.ar_count > 0) {
+        free_dns_records(dns_message->additional, dns_message->header.ar_count);
+        free(dns_message->additional);
+        dns_message->additional = NULL;
+    }
+}
