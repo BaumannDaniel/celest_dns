@@ -120,6 +120,12 @@ void parse_dns_questions(
     u_int16_t *questions_buffer_end_index_ptr
 );
 
+void dns_questions_to_buffer(
+    const DnsQuestion *dns_questions,
+    u_int8_t *buffer_ptr,
+    u_int16_t *questions_buffer_end_index_ptr
+);
+
 void free_dns_question(DnsQuestion *dns_question);
 
 void free_dns_questions(DnsQuestion *dns_questions, u_int16_t qd_count);

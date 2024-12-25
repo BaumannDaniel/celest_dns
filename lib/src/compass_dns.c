@@ -3,6 +3,7 @@
 #include "compass_dns.h"
 
 #define STRING_END '\0'
+#define DOMAIN_SEPARATOR '.'
 
 static u_int16_t big_endian_chars_to_short(const u_int8_t most_sig_char, const u_int8_t least_sig_char) {
     return most_sig_char * 256 + least_sig_char;
@@ -70,7 +71,7 @@ static void retrieve_domain(
             continue;
         }
         if (domain_index > 0) {
-            domain_ptr[domain_index] = '.';
+            domain_ptr[domain_index] = DOMAIN_SEPARATOR;
             domain_index++;
         }
         memcpy(domain_ptr + domain_index, buffer_ptr + buffer_index, segment_indicator);
@@ -82,6 +83,31 @@ static void retrieve_domain(
     domain_ptr[domain_index] = STRING_END;
     if (domain_pointer_end_index > 0) buffer_index = domain_pointer_end_index;
     *domain_end_ptr = buffer_index - 1;
+}
+
+static u_int8_t *domain_to_label_sequence(const char *domain_ptr, u_int8_t *domain_sequence_size_ptr) {
+    u_int8_t *label_sequence = calloc(255, sizeof(char));
+    u_int8_t sequence_index = 0;
+    u_int8_t domain_index = 0;
+    u_int8_t label_size = 0;
+    while (domain_ptr[domain_index - 1] != STRING_END) {
+        if (domain_ptr[domain_index] == DOMAIN_SEPARATOR || domain_ptr[domain_index] == STRING_END) {
+            label_sequence[sequence_index] = label_size;
+            sequence_index++;
+            memcpy(label_sequence + sequence_index, domain_ptr + (domain_index - label_size), label_size);
+            sequence_index += label_size;
+            domain_index++;
+            label_size = 0;
+            continue;
+        }
+        domain_index++;
+        label_size++;
+    }
+    label_sequence[sequence_index] = 0x00;
+    sequence_index++;
+    *domain_sequence_size_ptr = sequence_index;
+    return label_sequence;
+
 }
 
 void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr) {
@@ -137,6 +163,14 @@ void parse_dns_questions(
         buffer_index += 2;
     }
     *questions_buffer_end_index_ptr = buffer_index - 1;
+}
+
+void dns_questions_to_buffer(
+    const DnsQuestion *dns_questions,
+    u_int8_t *buffer_ptr,
+    u_int16_t *questions_buffer_end_index_ptr
+) {
+
 }
 
 void free_dns_question(DnsQuestion *dns_question) {
