@@ -69,24 +69,6 @@ typedef enum QClass {
     CLASS_ANY = 255
 } QClass;
 
-
-/**
-* Struct to represent a dns message headers
-*
-* id (u_int16): 2 byte message id
-* qr (u_int8): 1 if message is response and 0 if query. First bit of third header byte.
-* opcode (u_int8): operation code. 4 bits
-* aa (u_int8): authoritative answer. True if server own queried domain.
-* tc (u_int8): truncation, indicates if message was larger than 512 bytes
-* rd (u_int8): recursion desired: if 1, then server should recursively resolve the query
-* ra (u_int8): recursion available: set by server if recursion is available
-* z (u_int8): reserved for dnssec queries. 3 bits
-* rcode (u_int8): response code: status of response. 4 bits
-* qd_count (u_int16) question count: number of questions in the messages question section. 2 bytes
-* an_count (u_int16) answer record count: number records in the messages answer section. 2 bytes
-* ns_count (u_int16) authority record count: number of records in the messages authority section. 2 bytes
-* ar_count (u_int16) additional records count: number of records in the messages additional section. 2 bytes
-*/
 typedef struct DnsHeader {
     u_int16_t id;
     u_int8_t qr;
@@ -103,32 +85,12 @@ typedef struct DnsHeader {
     u_int16_t ar_count;
 } DnsHeader;
 
-void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr);
-
-void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr);
-
 typedef struct DnsQuestion {
     char *domain;
     u_int16_t domain_size;
     u_int16_t q_type;
     u_int16_t q_class;
 } DnsQuestion;
-
-void parse_dns_questions(
-    const u_int8_t *buffer_ptr,
-    DnsQuestion *dns_questions_ptr,
-    u_int16_t *questions_buffer_end_index_ptr
-);
-
-void dns_questions_to_buffer(
-    const DnsQuestion *dns_questions,
-    u_int8_t *buffer_ptr,
-    u_int16_t *questions_buffer_end_index_ptr
-);
-
-void free_dns_question(DnsQuestion *dns_question);
-
-void free_dns_questions(DnsQuestion *dns_questions, u_int16_t qd_count);
 
 typedef struct DnsRecord {
     char *domain;
@@ -139,18 +101,6 @@ typedef struct DnsRecord {
     u_int16_t rd_length;
     u_int8_t *r_data;
 } DnsRecord;
-
-void parse_dns_records(
-    const u_int8_t *buffer_ptr,
-    DnsRecord *dns_record_ptr,
-    u_int16_t *records_buffer_end_index_ptr,
-    u_int16_t buffer_index,
-    u_int16_t record_count
-);
-
-void free_dns_record(DnsRecord *dns_record);
-
-void free_dns_records(DnsRecord *dns_record, u_int16_t record_count);
 
 typedef struct DnsMessage {
     DnsHeader header;
