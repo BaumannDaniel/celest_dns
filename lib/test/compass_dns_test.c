@@ -131,8 +131,8 @@ void dns_message_to_buffer__convert_header_successfully() {
         .id = 257, .qr = 1, .opcode = OC_STATUS,
         .aa = 1, .tc = 1, .rd = 1,
         .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 4, .an_count = 3, .ns_count = 2,
-        .ar_count = 1
+        .qd_count = 0, .an_count = 0, .ns_count = 0,
+        .ar_count = 0
     };
     DnsMessage dns_message;
     dns_message.header = dns_header;
@@ -144,15 +144,57 @@ void dns_message_to_buffer__convert_header_successfully() {
     TEST_ASSERT_EQUAL(0x97, dns_message_buffer_ptr[2]);
     TEST_ASSERT_EQUAL(0x95, dns_message_buffer_ptr[3]);
     TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[4]);
-    TEST_ASSERT_EQUAL(0x04, dns_message_buffer_ptr[5]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[5]);
     TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[6]);
-    TEST_ASSERT_EQUAL(0x03, dns_message_buffer_ptr[7]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[7]);
     TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[8]);
-    TEST_ASSERT_EQUAL(0x02, dns_message_buffer_ptr[9]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[9]);
     TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[10]);
-    TEST_ASSERT_EQUAL(0x01, dns_message_buffer_ptr[11]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[11]);
     free(dns_message_buffer_ptr);
 }
+
+void dns_message_to_buffer__convert_questions_successfully() {
+    const DnsHeader dns_header = {
+        .id = 257, .qr = 1, .opcode = OC_STATUS,
+        .aa = 1, .tc = 1, .rd = 1,
+        .ra = 1, .z = 1, .rcode = RC_REFUSED,
+        .qd_count = 2, .an_count = 0, .ns_count = 0,
+        .ar_count = 0
+    };
+    const DnsQuestion dns_question1 = {
+        .domain = "test.com", .domain_size = 9, .q_type = TYPE_ALL, .q_class = CLASS_ANY
+    };
+    const DnsQuestion dns_question2 = {
+        .domain = "test.de", .domain_size = 8, .q_type = TYPE_A, .q_class = CLASS_IN
+    };
+    const DnsQuestion dns_questions[2] = {dns_question1, dns_question2};
+    DnsMessage dns_message;
+    dns_message.header = dns_header;
+    dns_message.questions = dns_questions;
+    u_int16_t buffer_size = -1;
+    const u_int8_t *dns_message_buffer_ptr = dns_message_to_buffer(&dns_message, &buffer_size);
+    TEST_ASSERT_EQUAL(DNS_HEADER_SIZE + 10 + 2 + 2 + 9 + 2 + 2, buffer_size);
+    const u_int8_t expected_domain1[10] = {0x04, 't', 'e', 's', 't', 0x03, 'c', 'o', 'm', 0x00};
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(
+        expected_domain1,
+        dns_message_buffer_ptr + 12,
+        10
+    );
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[22]);
+    TEST_ASSERT_EQUAL(TYPE_ALL, dns_message_buffer_ptr[23]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[24]);
+    TEST_ASSERT_EQUAL(CLASS_ANY, dns_message_buffer_ptr[25]);
+    const u_int8_t expected_domain2[9] = {0x04, 't', 'e', 's', 't', 0x02, 'd', 'e', 0x00};
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(
+        expected_domain2,
+        dns_message_buffer_ptr + 26,
+        9
+    );
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[35]);
+    TEST_ASSERT_EQUAL(TYPE_A, dns_message_buffer_ptr[36]);
+}
+
 
 int main(void) {
     UNITY_BEGIN();
@@ -163,5 +205,6 @@ int main(void) {
     RUN_TEST(parse_dns_message__parse_questions_with_end_pointer);
     RUN_TEST(parse_dns_message__parse_single_answer);
     RUN_TEST(dns_message_to_buffer__convert_header_successfully);
+    RUN_TEST(dns_message_to_buffer__convert_questions_successfully);
     return UNITY_END();
 }
