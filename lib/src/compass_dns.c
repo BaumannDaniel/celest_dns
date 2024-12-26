@@ -17,7 +17,9 @@ void parse_dns_questions(
 
 void dns_questions_to_buffer(
     const DnsQuestion *dns_questions,
+    u_int16_t qd_count,
     u_int8_t *buffer_ptr,
+    u_int16_t buffer_index,
     u_int16_t *questions_buffer_end_index_ptr
 );
 
@@ -100,6 +102,13 @@ void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) 
     }
 }
 
+u_int8_t *dns_message_to_buffer(const DnsMessage *dns_message, u_int16_t *buffer_size_ptr) {
+    u_int8_t *buffer_ptr = calloc(512, sizeof(char));
+    dns_header_to_buffer(&dns_message->header, buffer_ptr);
+    *buffer_size_ptr = DNS_HEADER_SIZE;
+    return buffer_ptr;
+}
+
 void free_dns_message(DnsMessage *dns_message) {
     if (dns_message->header.qd_count > 0) {
         free_dns_questions(dns_message->questions, dns_message->header.qd_count);
@@ -180,10 +189,23 @@ void parse_dns_questions(
 
 void dns_questions_to_buffer(
     const DnsQuestion *dns_questions,
+    const u_int16_t qd_count,
     u_int8_t *buffer_ptr,
+    u_int16_t buffer_index,
     u_int16_t *questions_buffer_end_index_ptr
 ) {
-
+    for (u_int16_t i = 0; i < qd_count; i++) {
+        u_int8_t domain_sequence_size = 0;
+        u_int8_t *domain_label_sequence = domain_to_label_sequence(dns_questions[i].domain, &domain_sequence_size);
+        memcpy(buffer_ptr + buffer_index, domain_label_sequence, domain_sequence_size);
+        free(domain_label_sequence);
+        buffer_index *= domain_sequence_size;
+        short_to_big_endian_chars(buffer_ptr + buffer_index, dns_questions->q_type);
+        buffer_index += 2;
+        short_to_big_endian_chars(buffer_ptr + buffer_index, dns_questions->q_type);
+        buffer_index += 2;
+    }
+    *questions_buffer_end_index_ptr = buffer_index - 1;
 }
 
 void free_dns_questions(DnsQuestion *dns_questions, const u_int16_t qd_count) {

@@ -112,6 +112,8 @@ typedef struct DnsMessage {
 
 void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr);
 
+u_int8_t *dns_message_to_buffer(const DnsMessage *dns_message, u_int16_t *buffer_size_ptr);
+
 void free_dns_message(DnsMessage *dns_message);
 
 #endif //COMPASS_DNS_H
