@@ -195,6 +195,48 @@ void dns_message_to_buffer__convert_questions_successfully() {
     TEST_ASSERT_EQUAL(TYPE_A, dns_message_buffer_ptr[36]);
 }
 
+void dns_message_to_buffer__convert_answers_successfully() {
+    const DnsHeader dns_header = {
+        .id = 257, .qr = 1, .opcode = OC_STATUS,
+        .aa = 1, .tc = 1, .rd = 1,
+        .ra = 1, .z = 1, .rcode = RC_REFUSED,
+        .qd_count = 0, .an_count = 1, .ns_count = 0,
+        .ar_count = 0
+    };
+    u_int8_t dns_answer_data[4] = {0x01, 0x02, 0x03, 0x04};
+    const DnsRecord dns_answer = {
+        .domain = "test.com", .r_type = TYPE_A, .r_class = CLASS_IN,
+        .ttl = 65537, .rd_length = 4, .r_data = dns_answer_data
+    };
+    const DnsRecord dns_answers[1] = { dns_answer };
+    DnsMessage dns_message;
+    dns_message.header = dns_header;
+    dns_message.answers = dns_answers;
+    u_int16_t buffer_size = -1;
+    const u_int8_t *dns_message_buffer_ptr = dns_message_to_buffer(&dns_message, &buffer_size);
+    TEST_ASSERT_EQUAL(DNS_HEADER_SIZE + 10 + 2 + 2 + 4 + 2 + 4, buffer_size);
+    const u_int8_t expected_domain[10] = {0x04, 't', 'e', 's', 't', 0x03, 'c', 'o', 'm', 0x00};
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(
+        expected_domain,
+        dns_message_buffer_ptr + 12,
+        10
+    );
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[22]);
+    TEST_ASSERT_EQUAL(TYPE_A, dns_message_buffer_ptr[23]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[24]);
+    TEST_ASSERT_EQUAL(CLASS_IN, dns_message_buffer_ptr[25]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[26]);
+    TEST_ASSERT_EQUAL(0x01, dns_message_buffer_ptr[27]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[28]);
+    TEST_ASSERT_EQUAL(0x01, dns_message_buffer_ptr[29]);
+    TEST_ASSERT_EQUAL(0x00, dns_message_buffer_ptr[30]);
+    TEST_ASSERT_EQUAL(0x04, dns_message_buffer_ptr[31]);
+    TEST_ASSERT_EQUAL(0x01, dns_message_buffer_ptr[32]);
+    TEST_ASSERT_EQUAL(0x02, dns_message_buffer_ptr[33]);
+    TEST_ASSERT_EQUAL(0x03, dns_message_buffer_ptr[34]);
+    TEST_ASSERT_EQUAL(0x04, dns_message_buffer_ptr[35]);
+}
+
 
 int main(void) {
     UNITY_BEGIN();
@@ -206,5 +248,6 @@ int main(void) {
     RUN_TEST(parse_dns_message__parse_single_answer);
     RUN_TEST(dns_message_to_buffer__convert_header_successfully);
     RUN_TEST(dns_message_to_buffer__convert_questions_successfully);
+    RUN_TEST(dns_message_to_buffer__convert_answers_successfully);
     return UNITY_END();
 }
