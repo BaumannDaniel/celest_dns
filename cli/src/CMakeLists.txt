@@ -1,0 +1,2 @@
+add_executable(compass_cli main.c)
+target_link_libraries(compass_cli PRIVATE compass_lib)
