@@ -163,10 +163,10 @@ void dns_message_to_buffer__convert_questions_successfully() {
         .ar_count = 0
     };
     const DnsQuestion dns_question1 = {
-        .domain = "test.com", .domain_size = 9, .q_type = TYPE_ALL, .q_class = CLASS_ANY
+        .domain = "test.com", .q_type = TYPE_ALL, .q_class = CLASS_ANY
     };
     const DnsQuestion dns_question2 = {
-        .domain = "test.de", .domain_size = 8, .q_type = TYPE_A, .q_class = CLASS_IN
+        .domain = "test.de", .q_type = TYPE_A, .q_class = CLASS_IN
     };
     const DnsQuestion dns_questions[2] = {dns_question1, dns_question2};
     DnsMessage dns_message;

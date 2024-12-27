@@ -188,8 +188,8 @@ void parse_dns_questions(
     u_int16_t buffer_index = DNS_HEADER_SIZE;
     for (u_int16_t i = 0; i < qd_count; i++) {
         dns_questions_ptr += i;
-        dns_questions_ptr->domain_size = calc_domain_size(buffer_ptr, buffer_index);
-        dns_questions_ptr->domain = calloc(dns_questions_ptr->domain_size, sizeof(char));
+        const u_int16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        dns_questions_ptr->domain = calloc(domain_size, sizeof(char));
         retrieve_domain(buffer_ptr, buffer_index, dns_questions_ptr->domain, &buffer_index);
         buffer_index++;
         dns_questions_ptr->q_type = big_endian_chars_to_short(buffer_ptr[buffer_index], buffer_ptr[buffer_index + 1]);
@@ -237,8 +237,8 @@ void parse_dns_records(
 ) {
     for (u_int16_t i = 0; i < record_count; i++) {
         dns_record_ptr += i;
-        dns_record_ptr->domain_size = calc_domain_size(buffer_ptr, buffer_index);
-        dns_record_ptr->domain = calloc(dns_record_ptr->domain_size, sizeof(char));
+        const u_int16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        dns_record_ptr->domain = calloc(domain_size, sizeof(char));
         retrieve_domain(buffer_ptr, buffer_index, dns_record_ptr->domain, &buffer_index);
         buffer_index++;
         dns_record_ptr->r_type = big_endian_chars_to_short(buffer_ptr[buffer_index], buffer_ptr[buffer_index + 1]);

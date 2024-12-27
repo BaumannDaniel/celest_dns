@@ -87,14 +87,12 @@ typedef struct DnsHeader {
 
 typedef struct DnsQuestion {
     char *domain;
-    u_int16_t domain_size;
     u_int16_t q_type;
     u_int16_t q_class;
 } DnsQuestion;
 
 typedef struct DnsRecord {
     char *domain;
-    u_int16_t domain_size;
     u_int16_t r_type;
     u_int16_t r_class;
     u_int32_t ttl;
