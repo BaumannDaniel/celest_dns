@@ -106,7 +106,7 @@ int main(const int argc, char *argv[]) {
     const struct sockaddr_in dns_server_addr = {
         .sin_family = AF_INET,
         .sin_port = htons(cli_config.port),
-        .sin_addr = {htonl(server_ip)}
+        .sin_addr = {server_ip }
     };
     send_dns_query(dns_server_addr, &dns_query, &dns_response);
     print_dns_response(&cli_config, &dns_response);
