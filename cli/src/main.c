@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <poll.h>
 
 #include "compass_dns.h"
 
@@ -12,7 +13,10 @@
 #define SERVER_FLAG 's'
 #define PORT_FLAG 'p'
 
-#define REQUEST_TIMEOUT
+#define REQUEST_TIMEOUT 5000
+
+static const int16_t POLL_EVENTS_BYTE_MASK = POLLIN | POLLPRI;
+static const int16_t POLL_ERROR_BYTE_MASK = POLLPRI | POLLERR | POLLNVAL;
 
 typedef struct CliConfig {
     char *server;
@@ -20,8 +24,8 @@ typedef struct CliConfig {
     char *domain;
 } CliConfig;
 
-void send_dns_query(
-    const struct sockaddr_in dns_server_addr,
+int send_dns_query(
+    const struct sockaddr_in *dns_server_addr,
     const DnsMessage *query_dns_message,
     DnsMessage *response_dns_message
 ) {
@@ -30,18 +34,31 @@ void send_dns_query(
 
     const int udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_socket == -1) {
-        return;
+        return -1;
     }
     const int reuse = 1;
     setsockopt(udp_socket, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
 
     sendto(
         udp_socket, dns_message_buffer, dns_message_buffer_size,
-        0, (struct sockaddr *) &dns_server_addr, sizeof(dns_server_addr)
+        0, (struct sockaddr *) dns_server_addr, sizeof(*dns_server_addr)
     );
     u_int8_t response_buffer[512] = {0};
-    recvfrom(udp_socket, response_buffer, 512, 0, NULL, NULL);
-    parse_dns_message(response_buffer, response_dns_message);
+    struct pollfd poll_fd;
+    poll_fd.fd = udp_socket;
+    poll_fd.events = POLL_EVENTS_BYTE_MASK;
+    poll(&poll_fd, 1, REQUEST_TIMEOUT);
+    if (poll_fd.revents & POLL_ERROR_BYTE_MASK) {
+        printf("Dns Query failed!\n");
+        return -1;
+    }
+    if (poll_fd.revents & POLLIN) {
+        recvfrom(udp_socket, response_buffer, 512, 0, NULL, NULL);
+        parse_dns_message(response_buffer, response_dns_message);
+        return 0;
+    }
+    printf("Dns Query timed out!\n");
+    return -1;
 }
 
 void print_dns_response(const CliConfig *cli_config, const DnsMessage *dns_message) {
@@ -113,7 +130,8 @@ int main(const int argc, char *argv[]) {
         .sin_port = htons(cli_config.port),
         .sin_addr = {server_ip }
     };
-    send_dns_query(dns_server_addr, &dns_query, &dns_response);
+    if (send_dns_query(&dns_server_addr, &dns_query, &dns_response) < 0) return -1;
     print_dns_response(&cli_config, &dns_response);
     free_dns_message(&dns_response);
+    return 0;
 }
