@@ -2,7 +2,7 @@
 
 # Get Started
 
-# compass_lib
+# celest_lib
 
 https://datatracker.ietf.org/doc/html/rfc1035
 

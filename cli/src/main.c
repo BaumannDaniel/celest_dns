@@ -6,7 +6,7 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-#include "compass_dns.h"
+#include "celest_dns.h"
 
 #define FLAG_PREFIX '-'
 #define DOMAIN_FLAG 'd'

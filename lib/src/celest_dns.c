@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "compass_dns.h"
+#include "celest_dns.h"
 
 #define STRING_END '\0'
 #define DOMAIN_SEPARATOR '.'

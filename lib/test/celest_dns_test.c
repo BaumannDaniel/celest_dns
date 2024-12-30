@@ -1,5 +1,5 @@
 #include "unity.h"
-#include "compass_dns.h"
+#include "celest_dns.h"
 
 void setUp(void) {
     // set stuff up here

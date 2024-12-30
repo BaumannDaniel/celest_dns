@@ -1,4 +1,4 @@
-add_executable(compass_lib_test compass_dns_test.c)
-target_link_libraries(compass_lib_test PRIVATE compass_lib unity)
+add_executable(celest_lib_test celest_dns_test.c)
+target_link_libraries(celest_lib_test PRIVATE celest_lib unity)
 
-add_test(compass_lib_test1 compass_lib_test)
+add_test(celest_lib_test1 celest_lib_test)
