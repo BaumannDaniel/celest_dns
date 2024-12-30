@@ -1,4 +1,6 @@
+#include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -9,6 +11,8 @@
 #define DOMAIN_FLAG 'd'
 #define SERVER_FLAG 's'
 #define PORT_FLAG 'p'
+
+#define REQUEST_TIMEOUT
 
 typedef struct CliConfig {
     char *server;
@@ -83,8 +87,9 @@ int main(const int argc, char *argv[]) {
         }
         argc_index++;
     }
+    const u_int16_t request_id = time(NULL) % INT16_MAX;
     const DnsHeader dns_header = {
-        .id = 2224, .qr = 0, .opcode = OC_QUERY,
+        .id = request_id, .qr = 0, .opcode = OC_QUERY,
         .aa = 0, .tc = 0, .rd = 1,
         .ra = 0, .z = 0, .rcode = 0,
         .qd_count = 1, .an_count = 0, .ns_count = 0,
