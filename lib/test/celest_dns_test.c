@@ -145,6 +145,10 @@ void parse_dns_message__parse_single_answer() {
     TEST_ASSERT_EQUAL_STRING("test.com", dns_message.answers[0].domain);
     TEST_ASSERT_EQUAL(TYPE_A, dns_message.answers[0].r_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_message.answers[0].r_class);
+    TEST_ASSERT_EQUAL(257, dns_message.answers[0].ttl);
+    TEST_ASSERT_EQUAL(4, dns_message.answers[0].rd_length);
+    const u_int8_t expected_r_data[4] = {0x01, 0x02, 0x03, 0x04};
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(expected_r_data, dns_message.answers[0].r_data, 4);
     free_dns_message(&dns_message);
 }
 
