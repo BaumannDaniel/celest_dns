@@ -7,13 +7,13 @@
 
 static void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr);
 
-void parse_dns_questions(
+int parse_dns_questions(
     const u_int8_t *buffer_ptr,
     DnsQuestion *dns_questions_ptr,
     u_int16_t *questions_buffer_end_index_ptr
 );
 
-void dns_questions_to_buffer(
+int dns_questions_to_buffer(
     const DnsQuestion *dns_questions,
     u_int16_t qd_count,
     u_int8_t *buffer_ptr,
@@ -23,7 +23,7 @@ void dns_questions_to_buffer(
 
 void free_dns_questions(DnsQuestion *dns_questions, u_int16_t qd_count);
 
-void parse_dns_records(
+int parse_dns_records(
     const u_int8_t *buffer_ptr,
     DnsRecord *dns_record_ptr,
     u_int16_t *records_buffer_end_index_ptr,
@@ -31,7 +31,7 @@ void parse_dns_records(
     u_int16_t record_count
 );
 
-void dns_records_to_buffer(
+int dns_records_to_buffer(
     const DnsRecord *dns_records,
     u_int16_t records_count,
     u_int8_t *buffer_ptr,
@@ -60,11 +60,12 @@ static void retrieve_domain(
 
 static u_int8_t *domain_to_label_sequence(const char *domain_ptr, u_int8_t *domain_sequence_size_ptr);
 
-void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
+int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     parse_dns_header(buffer_ptr, &dns_message_ptr->header);
     u_int16_t buffer_index = DNS_HEADER_SIZE;
     if (dns_message_ptr->header.qd_count > 0) {
         dns_message_ptr->questions = calloc(dns_message_ptr->header.qd_count, sizeof(DnsQuestion));
+        if (dns_message_ptr->questions == NULL) return -1;
         parse_dns_questions(buffer_ptr, dns_message_ptr->questions, &buffer_index);
         buffer_index++;
     } else {
@@ -72,6 +73,7 @@ void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) 
     }
     if (dns_message_ptr->header.an_count > 0) {
         dns_message_ptr->answers = calloc(dns_message_ptr->header.an_count, sizeof(DnsRecord));
+        if (dns_message_ptr->answers == NULL) return -1;
         parse_dns_records(
             buffer_ptr,
             dns_message_ptr->answers,
@@ -85,6 +87,7 @@ void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) 
     }
     if (dns_message_ptr->header.ns_count > 0) {
         dns_message_ptr->authorities = calloc(dns_message_ptr->header.ns_count, sizeof(DnsRecord));
+        if (dns_message_ptr->authorities == NULL) return -1;
         parse_dns_records(
             buffer_ptr,
             dns_message_ptr->authorities,
@@ -98,6 +101,7 @@ void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) 
     }
     if (dns_message_ptr->header.ar_count > 0) {
         dns_message_ptr->additional = calloc(dns_message_ptr->header.ar_count, sizeof(DnsRecord));
+        if (dns_message_ptr->authorities == NULL) return -1;
         parse_dns_records(
             buffer_ptr,
             dns_message_ptr->additional,
@@ -108,53 +112,72 @@ void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) 
     } else {
         dns_message_ptr->additional = NULL;
     }
+    return 0;
 }
 
 u_int8_t *dns_message_to_buffer(const DnsMessage *dns_message, u_int16_t *buffer_size_ptr) {
     u_int8_t *buffer_ptr = calloc(512, sizeof(char));
-    if (buffer_ptr == NULL) {
-        return NULL;
-    }
+    if (buffer_ptr == NULL) return NULL;
     dns_header_to_buffer(&dns_message->header, buffer_ptr);
     *buffer_size_ptr = DNS_HEADER_SIZE;
     if (dns_message->header.qd_count > 0) {
-        dns_questions_to_buffer(
-            dns_message->questions,
-            dns_message->header.qd_count,
-            buffer_ptr,
-            *buffer_size_ptr,
-            buffer_size_ptr
-        );
+        if (
+            dns_questions_to_buffer(
+                dns_message->questions,
+                dns_message->header.qd_count,
+                buffer_ptr,
+                *buffer_size_ptr,
+                buffer_size_ptr
+            ) < 0
+        ) {
+            free(buffer_ptr);
+            return NULL;
+        }
         *buffer_size_ptr += 1;
     }
     if (dns_message->header.an_count > 0) {
-        dns_records_to_buffer(
-            dns_message->answers,
-            dns_message->header.an_count,
-            buffer_ptr,
-            *buffer_size_ptr,
-            buffer_size_ptr
-        );
+        if (
+            dns_records_to_buffer(
+                dns_message->answers,
+                dns_message->header.an_count,
+                buffer_ptr,
+                *buffer_size_ptr,
+                buffer_size_ptr
+            ) < 0
+        ) {
+            free(buffer_ptr);
+            return NULL;
+        }
         *buffer_size_ptr += 1;
     }
     if (dns_message->header.ns_count > 0) {
-        dns_records_to_buffer(
-            dns_message->authorities,
-            dns_message->header.ns_count,
-            buffer_ptr,
-            *buffer_size_ptr,
-            buffer_size_ptr
-        );
+        if (
+            dns_records_to_buffer(
+                dns_message->authorities,
+                dns_message->header.ns_count,
+                buffer_ptr,
+                *buffer_size_ptr,
+                buffer_size_ptr
+            ) < 0
+        ) {
+            free(buffer_ptr);
+            return NULL;
+        }
         *buffer_size_ptr += 1;
     }
     if (dns_message->header.ar_count > 0) {
-        dns_records_to_buffer(
-            dns_message->additional,
-            dns_message->header.ar_count,
-            buffer_ptr,
-            *buffer_size_ptr,
-            buffer_size_ptr
-        );
+        if (
+            dns_records_to_buffer(
+                dns_message->additional,
+                dns_message->header.ar_count,
+                buffer_ptr,
+                *buffer_size_ptr,
+                buffer_size_ptr
+            ) < 0
+        ) {
+            free(buffer_ptr);
+            return NULL;
+        }
         *buffer_size_ptr += 1;
     }
     return buffer_ptr;
@@ -217,7 +240,7 @@ void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr)
     u_int16_to_big_endian_chars(buffer_ptr + 10, dns_header_ptr->ar_count);
 }
 
-void parse_dns_questions(
+int parse_dns_questions(
     const u_int8_t *buffer_ptr,
     DnsQuestion *dns_questions_ptr,
     u_int16_t *questions_buffer_end_index_ptr
@@ -227,7 +250,9 @@ void parse_dns_questions(
     for (u_int16_t i = 0; i < qd_count; i++) {
         dns_questions_ptr += i;
         const u_int16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        if (domain_size > MAX_DOMAIN_SIZE + 1) return -1;
         dns_questions_ptr->domain = calloc(domain_size, sizeof(char));
+        if (dns_questions_ptr->domain == NULL) return -1;
         retrieve_domain(buffer_ptr, buffer_index, dns_questions_ptr->domain, &buffer_index);
         buffer_index++;
         dns_questions_ptr->q_type = big_endian_chars_to_u_int16(buffer_ptr + buffer_index);
@@ -236,9 +261,10 @@ void parse_dns_questions(
         buffer_index += 2;
     }
     *questions_buffer_end_index_ptr = buffer_index - 1;
+    return 0;
 }
 
-void dns_questions_to_buffer(
+int dns_questions_to_buffer(
     const DnsQuestion *dns_questions,
     const u_int16_t qd_count,
     u_int8_t *buffer_ptr,
@@ -248,6 +274,11 @@ void dns_questions_to_buffer(
     for (u_int16_t i = 0; i < qd_count; i++) {
         u_int8_t domain_sequence_size = 0;
         u_int8_t *domain_label_sequence = domain_to_label_sequence(dns_questions[i].domain, &domain_sequence_size);
+        if (domain_label_sequence == NULL) return -1;
+        if (domain_sequence_size + buffer_index + 1 > MAX_DNS_MESSAGE_SIZE) {
+            free(domain_label_sequence);
+            return -1;
+        }
         memcpy(buffer_ptr + buffer_index, domain_label_sequence, domain_sequence_size);
         free(domain_label_sequence);
         buffer_index += domain_sequence_size;
@@ -257,6 +288,7 @@ void dns_questions_to_buffer(
         buffer_index += 2;
     }
     *questions_buffer_end_index_ptr = buffer_index - 1;
+    return 0;
 }
 
 void free_dns_questions(DnsQuestion *dns_questions, const u_int16_t qd_count) {
@@ -266,7 +298,7 @@ void free_dns_questions(DnsQuestion *dns_questions, const u_int16_t qd_count) {
     }
 }
 
-void parse_dns_records(
+int parse_dns_records(
     const u_int8_t *buffer_ptr,
     DnsRecord *dns_record_ptr,
     u_int16_t *records_buffer_end_index_ptr,
@@ -276,7 +308,9 @@ void parse_dns_records(
     for (u_int16_t i = 0; i < record_count; i++) {
         dns_record_ptr += i;
         const u_int16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        if (domain_size > MAX_DOMAIN_SIZE + 1) return -1;
         dns_record_ptr->domain = calloc(domain_size, sizeof(char));
+        if (dns_record_ptr->domain == NULL) return -1;
         retrieve_domain(buffer_ptr, buffer_index, dns_record_ptr->domain, &buffer_index);
         buffer_index++;
         dns_record_ptr->r_type = big_endian_chars_to_u_int16(buffer_ptr + buffer_index);
@@ -288,13 +322,15 @@ void parse_dns_records(
         dns_record_ptr->rd_length = big_endian_chars_to_u_int16(buffer_ptr + buffer_index);
         buffer_index += 2;
         dns_record_ptr->r_data = calloc(dns_record_ptr->rd_length, sizeof(char));
+        if (dns_record_ptr->r_data == NULL) return -1;
         memcpy(dns_record_ptr->r_data, buffer_ptr + buffer_index, dns_record_ptr->rd_length);
         buffer_index += dns_record_ptr->rd_length;
     }
     *records_buffer_end_index_ptr = buffer_index - 1;
+    return 0;
 }
 
-void dns_records_to_buffer(
+int dns_records_to_buffer(
     const DnsRecord *dns_records,
     const u_int16_t records_count,
     u_int8_t *buffer_ptr,
@@ -304,6 +340,11 @@ void dns_records_to_buffer(
     for (u_int16_t i = 0; i < records_count; i++) {
         u_int8_t domain_sequence_size = 0;
         u_int8_t *domain_label_sequence = domain_to_label_sequence(dns_records[i].domain, &domain_sequence_size);
+        if (domain_label_sequence == NULL) return -1;
+        if (domain_sequence_size + buffer_index + 1 > MAX_DNS_MESSAGE_SIZE) {
+            free(domain_label_sequence);
+            return -1;
+        }
         memcpy(buffer_ptr + buffer_index, domain_label_sequence, domain_sequence_size);
         free(domain_label_sequence);
         buffer_index += domain_sequence_size;
@@ -315,10 +356,12 @@ void dns_records_to_buffer(
         buffer_index += 4;
         u_int16_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].rd_length);
         buffer_index += 2;
+        if (dns_records->rd_length + buffer_index + 1 > MAX_DNS_MESSAGE_SIZE) return -1;
         memcpy(buffer_ptr + buffer_index, dns_records->r_data, dns_records->rd_length);
         buffer_index += dns_records->rd_length;
     }
     *buffer_end_index_ptr = buffer_index - 1;
+    return 0;
 }
 
 void free_dns_records(DnsRecord *dns_records, const u_int16_t record_count) {
@@ -423,7 +466,9 @@ static void retrieve_domain(
 }
 
 static u_int8_t *domain_to_label_sequence(const char *domain_ptr, u_int8_t *domain_sequence_size_ptr) {
-    u_int8_t *label_sequence = calloc(255, sizeof(char));
+    const u_int8_t max_label_sequence_size = MAX_DOMAIN_SIZE + 1;
+    u_int8_t *label_sequence = calloc(max_label_sequence_size, sizeof(char));
+    if (label_sequence == NULL) return NULL;
     u_int8_t sequence_index = 0;
     u_int8_t domain_index = 1;
     u_int8_t label_size = 1;
@@ -431,6 +476,10 @@ static u_int8_t *domain_to_label_sequence(const char *domain_ptr, u_int8_t *doma
         if (domain_ptr[domain_index] == DOMAIN_SEPARATOR || domain_ptr[domain_index] == STRING_END) {
             label_sequence[sequence_index] = label_size;
             sequence_index++;
+            if (label_size + sequence_index + 1 > max_label_sequence_size) {
+                free(label_sequence);
+                return NULL;
+            }
             memcpy(label_sequence + sequence_index, domain_ptr + (domain_index - label_size), label_size);
             sequence_index += label_size;
             domain_index++;
