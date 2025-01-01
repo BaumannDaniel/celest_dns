@@ -66,7 +66,13 @@ int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     if (dns_message_ptr->header.qd_count > 0) {
         dns_message_ptr->questions = calloc(dns_message_ptr->header.qd_count, sizeof(DnsQuestion));
         if (dns_message_ptr->questions == NULL) return -1;
-        parse_dns_questions(buffer_ptr, dns_message_ptr->questions, &buffer_index);
+        if (
+            parse_dns_questions(buffer_ptr, dns_message_ptr->questions, &buffer_index) < 0
+        ) {
+            free(dns_message_ptr->questions);
+            dns_message_ptr->questions = NULL;
+            return -1;
+        }
         buffer_index++;
     } else {
         dns_message_ptr->questions = NULL;
@@ -74,13 +80,19 @@ int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     if (dns_message_ptr->header.an_count > 0) {
         dns_message_ptr->answers = calloc(dns_message_ptr->header.an_count, sizeof(DnsRecord));
         if (dns_message_ptr->answers == NULL) return -1;
-        parse_dns_records(
-            buffer_ptr,
-            dns_message_ptr->answers,
-            &buffer_index,
-            buffer_index,
-            dns_message_ptr->header.an_count
-        );
+        if (
+            parse_dns_records(
+                buffer_ptr,
+                dns_message_ptr->answers,
+                &buffer_index,
+                buffer_index,
+                dns_message_ptr->header.an_count
+            ) < 0
+        ) {
+            free(dns_message_ptr->answers);
+            dns_message_ptr->answers = NULL;
+            return -1;
+        }
         buffer_index++;
     } else {
         dns_message_ptr->answers = NULL;
@@ -88,13 +100,19 @@ int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     if (dns_message_ptr->header.ns_count > 0) {
         dns_message_ptr->authorities = calloc(dns_message_ptr->header.ns_count, sizeof(DnsRecord));
         if (dns_message_ptr->authorities == NULL) return -1;
-        parse_dns_records(
-            buffer_ptr,
-            dns_message_ptr->authorities,
-            &buffer_index,
-            buffer_index,
-            dns_message_ptr->header.ns_count
-        );
+        if (
+            parse_dns_records(
+                buffer_ptr,
+                dns_message_ptr->authorities,
+                &buffer_index,
+                buffer_index,
+                dns_message_ptr->header.ns_count
+            ) < 0
+        ) {
+            free(dns_message_ptr->answers);
+            dns_message_ptr->answers = NULL;
+            return -1;
+        }
         buffer_index++;
     } else {
         dns_message_ptr->authorities = NULL;
@@ -102,13 +120,19 @@ int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     if (dns_message_ptr->header.ar_count > 0) {
         dns_message_ptr->additional = calloc(dns_message_ptr->header.ar_count, sizeof(DnsRecord));
         if (dns_message_ptr->authorities == NULL) return -1;
-        parse_dns_records(
-            buffer_ptr,
-            dns_message_ptr->additional,
-            &buffer_index,
-            buffer_index,
-            dns_message_ptr->header.ar_count
-        );
+        if (
+            parse_dns_records(
+                buffer_ptr,
+                dns_message_ptr->additional,
+                &buffer_index,
+                buffer_index,
+                dns_message_ptr->header.ar_count
+            ) < 0
+        ) {
+            free(dns_message_ptr->answers);
+            dns_message_ptr->answers = NULL;
+            return -1;
+        }
     } else {
         dns_message_ptr->additional = NULL;
     }
