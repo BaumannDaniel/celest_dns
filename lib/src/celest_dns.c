@@ -5,8 +5,6 @@
 #define STRING_END '\0'
 #define DOMAIN_SEPARATOR '.'
 
-static void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr);
-
 static void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr);
 
 void parse_dns_questions(

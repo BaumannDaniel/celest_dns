@@ -9,6 +9,28 @@ void tearDown(void) {
     // clean stuff up here
 }
 
+void parse_dns_header__successfully() {
+    const u_int8_t dns_header_bytes[12] = {
+        0x01, 0x01, 0x8f, 0xb3, 0x01, 0x02,
+        0x01, 0x03, 0x01, 0x04, 0x01, 0x05
+    };
+    DnsHeader dns_header;
+    parse_dns_header(dns_header_bytes, &dns_header);
+    TEST_ASSERT_EQUAL(257, dns_header.id);
+    TEST_ASSERT_EQUAL(1, dns_header.qr);
+    TEST_ASSERT_EQUAL(1, dns_header.opcode);
+    TEST_ASSERT_EQUAL(1, dns_header.aa);
+    TEST_ASSERT_EQUAL(1, dns_header.tc);
+    TEST_ASSERT_EQUAL(1, dns_header.rd);
+    TEST_ASSERT_EQUAL(1, dns_header.ra);
+    TEST_ASSERT_EQUAL(3, dns_header.z);
+    TEST_ASSERT_EQUAL(3, dns_header.rcode);
+    TEST_ASSERT_EQUAL(258, dns_header.qd_count);
+    TEST_ASSERT_EQUAL(259, dns_header.an_count);
+    TEST_ASSERT_EQUAL(260, dns_header.ns_count);
+    TEST_ASSERT_EQUAL(261, dns_header.ar_count);
+}
+
 void parse_dns_message__parse_header_successfully() {
     const u_int8_t dns_header_bytes[12] = {
         0x00, 0x05, 0x8f, 0xb3, 0x00, 0x00,
@@ -240,6 +262,7 @@ void dns_message_to_buffer__convert_answers_successfully() {
 
 int main(void) {
     UNITY_BEGIN();
+    RUN_TEST(parse_dns_header__successfully);
     RUN_TEST(parse_dns_message__parse_header_successfully);
     RUN_TEST(parse_dns_message__parse_single_question);
     RUN_TEST(parse_dns_message__parse_multiple_questions);
