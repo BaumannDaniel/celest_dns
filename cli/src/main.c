@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -51,6 +52,7 @@ int send_dns_query(
         udp_socket, dns_message_buffer, dns_message_buffer_size,
         0, (struct sockaddr *) dns_server_addr, sizeof(*dns_server_addr)
     );
+    free(&dns_message_buffer);
     u_int8_t response_buffer[512] = {0};
     struct pollfd poll_fd;
     poll_fd.fd = udp_socket;
@@ -58,14 +60,17 @@ int send_dns_query(
     poll(&poll_fd, 1, REQUEST_TIMEOUT);
     if (poll_fd.revents & POLL_ERROR_BYTE_MASK) {
         printf("Dns Query failed!\n");
+        close(udp_socket);
         return -1;
     }
     if (poll_fd.revents & POLL_EVENTS_BYTE_MASK) {
         recvfrom(udp_socket, response_buffer, 512, 0, NULL, NULL);
         parse_dns_message(response_buffer, response_dns_message);
+        close(udp_socket);
         return 0;
     }
     printf("Dns Query timed out!\n");
+    close(udp_socket);
     return -1;
 }
 
