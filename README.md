@@ -7,3 +7,5 @@
 https://datatracker.ietf.org/doc/html/rfc1035
 
 https://datatracker.ietf.org/doc/html/rfc1886
+
+https://datatracker.ietf.org/doc/html/rfc9619

@@ -48,7 +48,8 @@ typedef enum BaseType {
     TYPE_HINFO = 13,
     TYPE_MINFO = 14,
     TYPE_MX = 15,
-    TYPE_TXT = 16
+    TYPE_TXT = 16,
+    TYPE_AAAA = 28
 } BaseType;
 
 typedef enum QType {
