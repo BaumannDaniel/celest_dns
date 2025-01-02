@@ -1,6 +1,8 @@
 #include "unity.h"
 #include "celest_dns.h"
 
+#include <string.h>
+
 void setUp(void) {
     // set stuff up here
 }
@@ -131,6 +133,31 @@ void parse_dns_message__parse_questions_with_end_pointer() {
     free_dns_message(&dns_message);
 }
 
+void parse_dns_message__question_exceeds_max_domain_size() {
+    const u_int8_t dns_header_bytes[12] = {
+        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    u_int8_t dns_message_buffer[274];
+    memcpy(dns_message_buffer, dns_header_bytes, 12);
+    u_int16_t dns_message_buffer_index = 12;
+    for (int i = 0; i < 4; i++) {
+        dns_message_buffer[dns_message_buffer_index] = 62;
+        dns_message_buffer_index++;
+        memset(dns_message_buffer + dns_message_buffer_index, 'x', 62);
+        dns_message_buffer_index += 62;
+    }
+    const u_int8_t dns_question_part_2[8] = {
+        0x02, 'd', 'e', 0x00, 0x00,
+        0x01, 0x00, 0x01
+    };
+    memcpy(dns_message_buffer + dns_message_buffer_index, dns_question_part_2, 8);
+    DnsMessage dns_message;
+    const int parse_result = parse_dns_message(dns_message_buffer, &dns_message);
+    TEST_ASSERT_EQUAL(-1, parse_result);
+    TEST_ASSERT_NULL(dns_message.questions);
+}
+
 void parse_dns_message__parse_single_answer() {
     const u_int8_t dns_message_buffer[] = {
         0x00, 0x05, 0x8f, 0xb3, 0x00, 0x00,
@@ -234,7 +261,7 @@ void dns_message_to_buffer__convert_answers_successfully() {
         .domain = "test.com", .r_type = TYPE_A, .r_class = CLASS_IN,
         .ttl = 65537, .rd_length = 4, .r_data = dns_answer_data
     };
-    const DnsRecord dns_answers[1] = { dns_answer };
+    const DnsRecord dns_answers[1] = {dns_answer};
     DnsMessage dns_message;
     dns_message.header = dns_header;
     dns_message.answers = dns_answers;
@@ -272,6 +299,7 @@ int main(void) {
     RUN_TEST(parse_dns_message__parse_multiple_questions);
     RUN_TEST(parse_dns_message__parse_questions_with_pointer);
     RUN_TEST(parse_dns_message__parse_questions_with_end_pointer);
+    RUN_TEST(parse_dns_message__question_exceeds_max_domain_size);
     RUN_TEST(parse_dns_message__parse_single_answer);
     RUN_TEST(dns_message_to_buffer__convert_header_successfully);
     RUN_TEST(dns_message_to_buffer__convert_questions_successfully);
