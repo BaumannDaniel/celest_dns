@@ -1,14 +1,21 @@
 #include "unity.h"
-#include "celest_dns.h"
-
 #include <string.h>
 
-void setUp(void) {
-    // set stuff up here
+#include "celest_dns.h"
+
+
+static const DnsHeader dns_header_template = {
+    .id = 257, .qr = 1, .opcode = OC_STATUS,
+    .aa = 1, .tc = 1, .rd = 1,
+    .ra = 1, .z = 1, .rcode = RC_REFUSED,
+    .qd_count = 0, .an_count = 0, .ns_count = 0,
+    .ar_count = 0
+};
+
+void setUp() {
 }
 
-void tearDown(void) {
-    // clean stuff up here
+void tearDown() {
 }
 
 void parse_dns_header__successfully() {
@@ -180,13 +187,7 @@ void parse_dns_message__parse_single_answer() {
 }
 
 void dns_message_to_buffer__convert_header_successfully() {
-    const DnsHeader dns_header = {
-        .id = 257, .qr = 1, .opcode = OC_STATUS,
-        .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 0, .an_count = 0, .ns_count = 0,
-        .ar_count = 0
-    };
+    const DnsHeader dns_header = dns_header_template;
     DnsMessage dns_message;
     dns_message.header = dns_header;
     u_int16_t buffer_size = -1;
@@ -208,13 +209,8 @@ void dns_message_to_buffer__convert_header_successfully() {
 }
 
 void dns_message_to_buffer__convert_questions_successfully() {
-    const DnsHeader dns_header = {
-        .id = 257, .qr = 1, .opcode = OC_STATUS,
-        .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 2, .an_count = 0, .ns_count = 0,
-        .ar_count = 0
-    };
+    DnsHeader dns_header = dns_header_template;
+    dns_header.qd_count = 2;
     const DnsQuestion dns_question1 = {
         .domain = "test.com", .q_type = TYPE_ALL, .q_class = CLASS_ANY
     };
@@ -249,13 +245,8 @@ void dns_message_to_buffer__convert_questions_successfully() {
 }
 
 void dns_message_to_buffer__convert_answers_successfully() {
-    const DnsHeader dns_header = {
-        .id = 257, .qr = 1, .opcode = OC_STATUS,
-        .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 0, .an_count = 1, .ns_count = 0,
-        .ar_count = 0
-    };
+    DnsHeader dns_header = dns_header_template;
+    dns_header.an_count = 1;
     u_int8_t dns_answer_data[4] = {0x01, 0x02, 0x03, 0x04};
     const DnsRecord dns_answer = {
         .domain = "test.com", .r_type = TYPE_A, .r_class = CLASS_IN,
@@ -291,13 +282,8 @@ void dns_message_to_buffer__convert_answers_successfully() {
 }
 
 void dns_message_to_buffer__question_exceeds_max_domain_length() {
-    const DnsHeader dns_header = {
-        .id = 257, .qr = 0, .opcode = OC_STATUS,
-        .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 1, .an_count = 0, .ns_count = 0,
-        .ar_count = 0
-    };
+    DnsHeader dns_header = dns_header_template;
+    dns_header.qd_count = 1;
     u_int8_t domain[255] = {0};
     u_int8_t domain_index = 2;
     memset(domain, 'x', domain_index);
