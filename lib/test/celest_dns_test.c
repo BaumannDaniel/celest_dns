@@ -290,6 +290,36 @@ void dns_message_to_buffer__convert_answers_successfully() {
     TEST_ASSERT_EQUAL(0x04, dns_message_buffer_ptr[35]);
 }
 
+void dns_message_to_buffer__question_exceeds_max_domain_length() {
+    const DnsHeader dns_header = {
+        .id = 257, .qr = 0, .opcode = OC_STATUS,
+        .aa = 1, .tc = 1, .rd = 1,
+        .ra = 1, .z = 1, .rcode = RC_REFUSED,
+        .qd_count = 1, .an_count = 0, .ns_count = 0,
+        .ar_count = 0
+    };
+    u_int8_t domain[255] = {0};
+    u_int8_t domain_index = 2;
+    memset(domain, 'x', domain_index);
+    for (int i = 0; i < 4; i++) {
+        domain[domain_index] = '.';
+        domain_index++;
+        memset(domain + domain_index, 'y', 62);
+        domain_index += 62;
+    }
+    domain[domain_index] = '\0';
+    const DnsQuestion dns_question = {
+        .domain = domain, .q_type = TYPE_ALL, .q_class = CLASS_ANY
+    };
+    const DnsQuestion dns_questions[1] = {dns_question};
+    DnsMessage dns_message;
+    dns_message.header = dns_header;
+    dns_message.questions = dns_questions;
+    u_int16_t buffer_size = -1;
+    const u_int8_t *dns_message_buffer_ptr = dns_message_to_buffer(&dns_message, &buffer_size);
+    TEST_ASSERT_NULL(dns_message_buffer_ptr);
+}
+
 
 int main(void) {
     UNITY_BEGIN();
@@ -304,5 +334,6 @@ int main(void) {
     RUN_TEST(dns_message_to_buffer__convert_header_successfully);
     RUN_TEST(dns_message_to_buffer__convert_questions_successfully);
     RUN_TEST(dns_message_to_buffer__convert_answers_successfully);
+    RUN_TEST(dns_message_to_buffer__question_exceeds_max_domain_length);
     return UNITY_END();
 }
