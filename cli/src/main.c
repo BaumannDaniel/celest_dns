@@ -40,34 +40,48 @@ int send_dns_query(
 ) {
     u_int16_t dns_message_buffer_size = 0;
     const u_int8_t *dns_message_buffer = dns_message_to_buffer(query_dns_message, &dns_message_buffer_size);
-
-    const int udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udp_socket == -1) {
+    if (dns_message_buffer == NULL) {
         return -1;
     }
-    const int reuse = 1;
-    setsockopt(udp_socket, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
+    const int udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udp_socket < 0) {
+        printf("Failed to create udp socket!\n");
+        return -1;
+    }
 
-    sendto(
-        udp_socket, dns_message_buffer, dns_message_buffer_size,
-        0, (struct sockaddr *) dns_server_addr, sizeof(*dns_server_addr)
-    );
-    free(&dns_message_buffer);
-    u_int8_t response_buffer[512] = {0};
+    if (
+        sendto(
+            udp_socket, dns_message_buffer, dns_message_buffer_size,
+            0, (struct sockaddr *) dns_server_addr, sizeof(*dns_server_addr)
+        ) < 0
+    ) {
+        close(udp_socket);
+        printf("Failed to send dns query!\n");
+        return -1;
+    }
     struct pollfd poll_fd;
     poll_fd.fd = udp_socket;
     poll_fd.events = POLL_EVENTS_BYTE_MASK;
     poll(&poll_fd, 1, REQUEST_TIMEOUT);
     if (poll_fd.revents & POLL_ERROR_BYTE_MASK) {
-        printf("Dns Query failed!\n");
+        printf("Socket failure while awaiting response!\n");
         close(udp_socket);
         return -1;
     }
     if (poll_fd.revents & POLL_EVENTS_BYTE_MASK) {
-        recvfrom(udp_socket, response_buffer, 512, 0, NULL, NULL);
-        parse_dns_message(response_buffer, response_dns_message);
+        u_int8_t response_buffer[MAX_DNS_MESSAGE_SIZE] = {0};
+        const ssize_t n_read_bytes = recvfrom(udp_socket, response_buffer, MAX_DNS_MESSAGE_SIZE, 0, NULL, NULL);
+        if (n_read_bytes < DNS_HEADER_SIZE) {
+            printf("Failed reading response from socket!\n");
+            close(udp_socket);
+            return -1;
+        }
         close(udp_socket);
-        return 0;
+        const int parse_result = parse_dns_message(response_buffer, response_dns_message);
+        if (parse_result < 0) {
+            printf("Failed to parse returned dns message!\n");
+        }
+        return parse_result;
     }
     printf("Dns Query timed out!\n");
     close(udp_socket);
