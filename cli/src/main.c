@@ -170,7 +170,10 @@ int main(const int argc, char *argv[]) {
     DnsMessage dns_response_ipv4;
     DnsMessage dns_response_ipv6;
     u_int32_t server_ip;
-    inet_pton(AF_INET, cli_config.server, &server_ip);
+    if (inet_pton(AF_INET, cli_config.server, &server_ip) != 1) {
+        printf("Invalid server ip!");
+        return -1;
+    }
     const struct sockaddr_in dns_server_addr = {
         .sin_family = AF_INET,
         .sin_port = htons(cli_config.port),
