@@ -1,12 +1,43 @@
 #include "unity.h"
-#include "compass_dns.h"
+#include <string.h>
 
-void setUp(void) {
-    // set stuff up here
+#include "celest_dns.h"
+
+
+static const DnsHeader dns_header_template = {
+    .id = 257, .qr = 1, .opcode = OC_STATUS,
+    .aa = 1, .tc = 1, .rd = 1,
+    .ra = 1, .z = 1, .rcode = RC_REFUSED,
+    .qd_count = 0, .an_count = 0, .ns_count = 0,
+    .ar_count = 0
+};
+
+void setUp() {
 }
 
-void tearDown(void) {
-    // clean stuff up here
+void tearDown() {
+}
+
+void parse_dns_header__successfully() {
+    const u_int8_t dns_header_bytes[12] = {
+        0x01, 0x01, 0x8f, 0xb3, 0x01, 0x02,
+        0x01, 0x03, 0x01, 0x04, 0x01, 0x05
+    };
+    DnsHeader dns_header;
+    parse_dns_header(dns_header_bytes, &dns_header);
+    TEST_ASSERT_EQUAL(257, dns_header.id);
+    TEST_ASSERT_EQUAL(1, dns_header.qr);
+    TEST_ASSERT_EQUAL(1, dns_header.opcode);
+    TEST_ASSERT_EQUAL(1, dns_header.aa);
+    TEST_ASSERT_EQUAL(1, dns_header.tc);
+    TEST_ASSERT_EQUAL(1, dns_header.rd);
+    TEST_ASSERT_EQUAL(1, dns_header.ra);
+    TEST_ASSERT_EQUAL(3, dns_header.z);
+    TEST_ASSERT_EQUAL(3, dns_header.rcode);
+    TEST_ASSERT_EQUAL(258, dns_header.qd_count);
+    TEST_ASSERT_EQUAL(259, dns_header.an_count);
+    TEST_ASSERT_EQUAL(260, dns_header.ns_count);
+    TEST_ASSERT_EQUAL(261, dns_header.ar_count);
 }
 
 void parse_dns_message__parse_header_successfully() {
@@ -109,6 +140,31 @@ void parse_dns_message__parse_questions_with_end_pointer() {
     free_dns_message(&dns_message);
 }
 
+void parse_dns_message__question_exceeds_max_domain_size() {
+    const u_int8_t dns_header_bytes[12] = {
+        0x00, 0x05, 0x8f, 0xb3, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    u_int8_t dns_message_buffer[274];
+    memcpy(dns_message_buffer, dns_header_bytes, 12);
+    u_int16_t dns_message_buffer_index = 12;
+    for (int i = 0; i < 4; i++) {
+        dns_message_buffer[dns_message_buffer_index] = 62;
+        dns_message_buffer_index++;
+        memset(dns_message_buffer + dns_message_buffer_index, 'x', 62);
+        dns_message_buffer_index += 62;
+    }
+    const u_int8_t dns_question_part_2[8] = {
+        0x02, 'd', 'e', 0x00, 0x00,
+        0x01, 0x00, 0x01
+    };
+    memcpy(dns_message_buffer + dns_message_buffer_index, dns_question_part_2, 8);
+    DnsMessage dns_message;
+    const int parse_result = parse_dns_message(dns_message_buffer, &dns_message);
+    TEST_ASSERT_EQUAL(-1, parse_result);
+    TEST_ASSERT_NULL(dns_message.questions);
+}
+
 void parse_dns_message__parse_single_answer() {
     const u_int8_t dns_message_buffer[] = {
         0x00, 0x05, 0x8f, 0xb3, 0x00, 0x00,
@@ -123,17 +179,15 @@ void parse_dns_message__parse_single_answer() {
     TEST_ASSERT_EQUAL_STRING("test.com", dns_message.answers[0].domain);
     TEST_ASSERT_EQUAL(TYPE_A, dns_message.answers[0].r_type);
     TEST_ASSERT_EQUAL(CLASS_IN, dns_message.answers[0].r_class);
+    TEST_ASSERT_EQUAL(257, dns_message.answers[0].ttl);
+    TEST_ASSERT_EQUAL(4, dns_message.answers[0].rd_length);
+    const u_int8_t expected_r_data[4] = {0x01, 0x02, 0x03, 0x04};
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(expected_r_data, dns_message.answers[0].r_data, 4);
     free_dns_message(&dns_message);
 }
 
 void dns_message_to_buffer__convert_header_successfully() {
-    const DnsHeader dns_header = {
-        .id = 257, .qr = 1, .opcode = OC_STATUS,
-        .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 0, .an_count = 0, .ns_count = 0,
-        .ar_count = 0
-    };
+    const DnsHeader dns_header = dns_header_template;
     DnsMessage dns_message;
     dns_message.header = dns_header;
     u_int16_t buffer_size = -1;
@@ -155,13 +209,8 @@ void dns_message_to_buffer__convert_header_successfully() {
 }
 
 void dns_message_to_buffer__convert_questions_successfully() {
-    const DnsHeader dns_header = {
-        .id = 257, .qr = 1, .opcode = OC_STATUS,
-        .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 2, .an_count = 0, .ns_count = 0,
-        .ar_count = 0
-    };
+    DnsHeader dns_header = dns_header_template;
+    dns_header.qd_count = 2;
     const DnsQuestion dns_question1 = {
         .domain = "test.com", .q_type = TYPE_ALL, .q_class = CLASS_ANY
     };
@@ -196,19 +245,14 @@ void dns_message_to_buffer__convert_questions_successfully() {
 }
 
 void dns_message_to_buffer__convert_answers_successfully() {
-    const DnsHeader dns_header = {
-        .id = 257, .qr = 1, .opcode = OC_STATUS,
-        .aa = 1, .tc = 1, .rd = 1,
-        .ra = 1, .z = 1, .rcode = RC_REFUSED,
-        .qd_count = 0, .an_count = 1, .ns_count = 0,
-        .ar_count = 0
-    };
+    DnsHeader dns_header = dns_header_template;
+    dns_header.an_count = 1;
     u_int8_t dns_answer_data[4] = {0x01, 0x02, 0x03, 0x04};
     const DnsRecord dns_answer = {
         .domain = "test.com", .r_type = TYPE_A, .r_class = CLASS_IN,
         .ttl = 65537, .rd_length = 4, .r_data = dns_answer_data
     };
-    const DnsRecord dns_answers[1] = { dns_answer };
+    const DnsRecord dns_answers[1] = {dns_answer};
     DnsMessage dns_message;
     dns_message.header = dns_header;
     dns_message.answers = dns_answers;
@@ -237,17 +281,45 @@ void dns_message_to_buffer__convert_answers_successfully() {
     TEST_ASSERT_EQUAL(0x04, dns_message_buffer_ptr[35]);
 }
 
+void dns_message_to_buffer__question_exceeds_max_domain_length() {
+    DnsHeader dns_header = dns_header_template;
+    dns_header.qd_count = 1;
+    u_int8_t domain[255] = {0};
+    u_int8_t domain_index = 2;
+    memset(domain, 'x', domain_index);
+    for (int i = 0; i < 4; i++) {
+        domain[domain_index] = '.';
+        domain_index++;
+        memset(domain + domain_index, 'y', 62);
+        domain_index += 62;
+    }
+    domain[domain_index] = '\0';
+    const DnsQuestion dns_question = {
+        .domain = domain, .q_type = TYPE_ALL, .q_class = CLASS_ANY
+    };
+    const DnsQuestion dns_questions[1] = {dns_question};
+    DnsMessage dns_message;
+    dns_message.header = dns_header;
+    dns_message.questions = dns_questions;
+    u_int16_t buffer_size = -1;
+    const u_int8_t *dns_message_buffer_ptr = dns_message_to_buffer(&dns_message, &buffer_size);
+    TEST_ASSERT_NULL(dns_message_buffer_ptr);
+}
+
 
 int main(void) {
     UNITY_BEGIN();
+    RUN_TEST(parse_dns_header__successfully);
     RUN_TEST(parse_dns_message__parse_header_successfully);
     RUN_TEST(parse_dns_message__parse_single_question);
     RUN_TEST(parse_dns_message__parse_multiple_questions);
     RUN_TEST(parse_dns_message__parse_questions_with_pointer);
     RUN_TEST(parse_dns_message__parse_questions_with_end_pointer);
+    RUN_TEST(parse_dns_message__question_exceeds_max_domain_size);
     RUN_TEST(parse_dns_message__parse_single_answer);
     RUN_TEST(dns_message_to_buffer__convert_header_successfully);
     RUN_TEST(dns_message_to_buffer__convert_questions_successfully);
     RUN_TEST(dns_message_to_buffer__convert_answers_successfully);
+    RUN_TEST(dns_message_to_buffer__question_exceeds_max_domain_length);
     return UNITY_END();
 }

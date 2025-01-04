@@ -4,6 +4,8 @@
 #include <stdlib.h>
 
 #define DNS_HEADER_SIZE 12
+#define MAX_DOMAIN_SIZE 253
+#define MAX_DNS_MESSAGE_SIZE 512
 
 const static u_int8_t QR_BYTE_MASK = 0b10000000;
 const static u_int8_t OPCODE_BYTE_MASK = 0b01111000;
@@ -48,7 +50,8 @@ typedef enum BaseType {
     TYPE_HINFO = 13,
     TYPE_MINFO = 14,
     TYPE_MX = 15,
-    TYPE_TXT = 16
+    TYPE_TXT = 16,
+    TYPE_AAAA = 28
 } BaseType;
 
 typedef enum QType {
@@ -108,7 +111,9 @@ typedef struct DnsMessage {
     DnsRecord *additional;
 } DnsMessage;
 
-void parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr);
+void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr);
+
+int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr);
 
 u_int8_t *dns_message_to_buffer(const DnsMessage *dns_message, u_int16_t *buffer_size_ptr);
 
