@@ -119,7 +119,7 @@ int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     }
     if (dns_message_ptr->header.ar_count > 0) {
         dns_message_ptr->additional = calloc(dns_message_ptr->header.ar_count, sizeof(DnsRecord));
-        if (dns_message_ptr->authorities == NULL) return -1;
+        if (dns_message_ptr->additional == NULL) return -1;
         if (
             parse_dns_records(
                 buffer_ptr,
