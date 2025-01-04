@@ -1,68 +1,69 @@
 #include <string.h>
+#include <stdlib.h>
 
 #include "celest_dns.h"
 
 #define STRING_END '\0'
 #define DOMAIN_SEPARATOR '.'
 
-static void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr);
+static void dns_header_to_buffer(const DnsHeader *dns_header_ptr, uint8_t *buffer_ptr);
 
 int parse_dns_questions(
-    const u_int8_t *buffer_ptr,
+    const uint8_t *buffer_ptr,
     DnsQuestion *dns_questions_ptr,
-    u_int16_t *questions_buffer_end_index_ptr
+    uint16_t *questions_buffer_end_index_ptr
 );
 
 int dns_questions_to_buffer(
     const DnsQuestion *dns_questions,
-    u_int16_t qd_count,
-    u_int8_t *buffer_ptr,
-    u_int16_t buffer_index,
-    u_int16_t *questions_buffer_end_index_ptr
+    uint16_t qd_count,
+    uint8_t *buffer_ptr,
+    uint16_t buffer_index,
+    uint16_t *questions_buffer_end_index_ptr
 );
 
-void free_dns_questions(DnsQuestion *dns_questions, u_int16_t qd_count);
+void free_dns_questions(DnsQuestion *dns_questions, uint16_t qd_count);
 
 int parse_dns_records(
-    const u_int8_t *buffer_ptr,
+    const uint8_t *buffer_ptr,
     DnsRecord *dns_record_ptr,
-    u_int16_t *records_buffer_end_index_ptr,
-    u_int16_t buffer_index,
-    u_int16_t record_count
+    uint16_t *records_buffer_end_index_ptr,
+    uint16_t buffer_index,
+    uint16_t record_count
 );
 
 int dns_records_to_buffer(
     const DnsRecord *dns_records,
-    u_int16_t records_count,
-    u_int8_t *buffer_ptr,
-    u_int16_t buffer_index,
-    u_int16_t *buffer_end_index_ptr
+    uint16_t records_count,
+    uint8_t *buffer_ptr,
+    uint16_t buffer_index,
+    uint16_t *buffer_end_index_ptr
 );
 
-void free_dns_records(DnsRecord *dns_records, u_int16_t record_count);
+void free_dns_records(DnsRecord *dns_records, uint16_t record_count);
 
-static u_int16_t big_endian_chars_to_u_int16(const u_int8_t *big_endian_chars_ptr);
+static uint16_t big_endian_chars_to_u_int16(const uint8_t *big_endian_chars_ptr);
 
-static void u_int16_to_big_endian_chars(u_int8_t *big_endian_chars_ptr, u_int16_t value);
+static void uint16_to_big_endian_chars(uint8_t *big_endian_chars_ptr, uint16_t value);
 
-static u_int16_t big_endian_chars_to_u_int32(const u_int8_t *big_endian_chars_ptr);
+static uint16_t big_endian_chars_to_u_int32(const uint8_t *big_endian_chars_ptr);
 
-static void u_int32_to_big_endian_chars(u_int8_t *big_endian_chars_ptr, u_int32_t value);
+static void uint32_to_big_endian_chars(uint8_t *big_endian_chars_ptr, uint32_t value);
 
-static u_int16_t calc_domain_size(const u_int8_t *buffer_ptr, u_int16_t buffer_index);
+static uint16_t calc_domain_size(const uint8_t *buffer_ptr, uint16_t buffer_index);
 
 static void retrieve_domain(
-    const u_int8_t *buffer_ptr,
-    u_int16_t buffer_index,
+    const uint8_t *buffer_ptr,
+    uint16_t buffer_index,
     char *domain_ptr,
-    u_int16_t *domain_end_ptr
+    uint16_t *domain_end_ptr
 );
 
-static u_int8_t *domain_to_label_sequence(const char *domain_ptr, u_int8_t *domain_sequence_size_ptr);
+static uint8_t *domain_to_label_sequence(const char *domain_ptr, uint8_t *domain_sequence_size_ptr);
 
-int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
+int parse_dns_message(const uint8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     parse_dns_header(buffer_ptr, &dns_message_ptr->header);
-    u_int16_t buffer_index = DNS_HEADER_SIZE;
+    uint16_t buffer_index = DNS_HEADER_SIZE;
     if (dns_message_ptr->header.qd_count > 0) {
         dns_message_ptr->questions = calloc(dns_message_ptr->header.qd_count, sizeof(DnsQuestion));
         if (dns_message_ptr->questions == NULL) return -1;
@@ -139,8 +140,8 @@ int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr) {
     return 0;
 }
 
-u_int8_t *dns_message_to_buffer(const DnsMessage *dns_message, u_int16_t *buffer_size_ptr) {
-    u_int8_t *buffer_ptr = calloc(512, sizeof(char));
+uint8_t *dns_message_to_buffer(const DnsMessage *dns_message, uint16_t *buffer_size_ptr) {
+    uint8_t *buffer_ptr = calloc(512, sizeof(char));
     if (buffer_ptr == NULL) return NULL;
     dns_header_to_buffer(&dns_message->header, buffer_ptr);
     *buffer_size_ptr = DNS_HEADER_SIZE;
@@ -230,7 +231,7 @@ void free_dns_message(DnsMessage *dns_message) {
     }
 }
 
-void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr) {
+void parse_dns_header(const uint8_t *buffer_ptr, DnsHeader *dns_header_ptr) {
     dns_header_ptr->id = big_endian_chars_to_u_int16(buffer_ptr);
     dns_header_ptr->qr = (buffer_ptr[2] & QR_BYTE_MASK) >> 7;
     dns_header_ptr->opcode = (buffer_ptr[2] & OPCODE_BYTE_MASK) >> 3;
@@ -246,8 +247,8 @@ void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr) {
     dns_header_ptr->ar_count = big_endian_chars_to_u_int16(buffer_ptr + 10);
 }
 
-void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr) {
-    u_int16_to_big_endian_chars(buffer_ptr, dns_header_ptr->id);
+void dns_header_to_buffer(const DnsHeader *dns_header_ptr, uint8_t *buffer_ptr) {
+    uint16_to_big_endian_chars(buffer_ptr, dns_header_ptr->id);
     buffer_ptr[2] = 0;
     if (dns_header_ptr->qr) buffer_ptr[2] += QR_BYTE_MASK;
     buffer_ptr[2] += dns_header_ptr->opcode << 3;
@@ -258,22 +259,22 @@ void dns_header_to_buffer(const DnsHeader *dns_header_ptr, u_int8_t *buffer_ptr)
     if (dns_header_ptr->ra) buffer_ptr[3] += RA_BYTE_MASK;
     buffer_ptr[3] += dns_header_ptr->z << 4;
     buffer_ptr[3] += dns_header_ptr->rcode;
-    u_int16_to_big_endian_chars(buffer_ptr + 4, dns_header_ptr->qd_count);
-    u_int16_to_big_endian_chars(buffer_ptr + 6, dns_header_ptr->an_count);
-    u_int16_to_big_endian_chars(buffer_ptr + 8, dns_header_ptr->ns_count);
-    u_int16_to_big_endian_chars(buffer_ptr + 10, dns_header_ptr->ar_count);
+    uint16_to_big_endian_chars(buffer_ptr + 4, dns_header_ptr->qd_count);
+    uint16_to_big_endian_chars(buffer_ptr + 6, dns_header_ptr->an_count);
+    uint16_to_big_endian_chars(buffer_ptr + 8, dns_header_ptr->ns_count);
+    uint16_to_big_endian_chars(buffer_ptr + 10, dns_header_ptr->ar_count);
 }
 
 int parse_dns_questions(
-    const u_int8_t *buffer_ptr,
+    const uint8_t *buffer_ptr,
     DnsQuestion *dns_questions_ptr,
-    u_int16_t *questions_buffer_end_index_ptr
+    uint16_t *questions_buffer_end_index_ptr
 ) {
-    const u_int16_t qd_count = big_endian_chars_to_u_int16(buffer_ptr + 4);
-    u_int16_t buffer_index = DNS_HEADER_SIZE;
-    for (u_int16_t i = 0; i < qd_count; i++) {
+    const uint16_t qd_count = big_endian_chars_to_u_int16(buffer_ptr + 4);
+    uint16_t buffer_index = DNS_HEADER_SIZE;
+    for (uint16_t i = 0; i < qd_count; i++) {
         dns_questions_ptr += i;
-        const u_int16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        const uint16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
         if (domain_size > MAX_DOMAIN_SIZE + 1) return -1;
         dns_questions_ptr->domain = calloc(domain_size, sizeof(char));
         if (dns_questions_ptr->domain == NULL) return -1;
@@ -290,14 +291,14 @@ int parse_dns_questions(
 
 int dns_questions_to_buffer(
     const DnsQuestion *dns_questions,
-    const u_int16_t qd_count,
-    u_int8_t *buffer_ptr,
-    u_int16_t buffer_index,
-    u_int16_t *questions_buffer_end_index_ptr
+    const uint16_t qd_count,
+    uint8_t *buffer_ptr,
+    uint16_t buffer_index,
+    uint16_t *questions_buffer_end_index_ptr
 ) {
-    for (u_int16_t i = 0; i < qd_count; i++) {
-        u_int8_t domain_sequence_size = 0;
-        u_int8_t *domain_label_sequence = domain_to_label_sequence(dns_questions[i].domain, &domain_sequence_size);
+    for (uint16_t i = 0; i < qd_count; i++) {
+        uint8_t domain_sequence_size = 0;
+        uint8_t *domain_label_sequence = domain_to_label_sequence(dns_questions[i].domain, &domain_sequence_size);
         if (domain_label_sequence == NULL) return -1;
         if (domain_sequence_size + buffer_index + 1 > MAX_DNS_MESSAGE_SIZE) {
             free(domain_label_sequence);
@@ -306,16 +307,16 @@ int dns_questions_to_buffer(
         memcpy(buffer_ptr + buffer_index, domain_label_sequence, domain_sequence_size);
         free(domain_label_sequence);
         buffer_index += domain_sequence_size;
-        u_int16_to_big_endian_chars(buffer_ptr + buffer_index, dns_questions[i].q_type);
+        uint16_to_big_endian_chars(buffer_ptr + buffer_index, dns_questions[i].q_type);
         buffer_index += 2;
-        u_int16_to_big_endian_chars(buffer_ptr + buffer_index, dns_questions[i].q_class);
+        uint16_to_big_endian_chars(buffer_ptr + buffer_index, dns_questions[i].q_class);
         buffer_index += 2;
     }
     *questions_buffer_end_index_ptr = buffer_index - 1;
     return 0;
 }
 
-void free_dns_questions(DnsQuestion *dns_questions, const u_int16_t qd_count) {
+void free_dns_questions(DnsQuestion *dns_questions, const uint16_t qd_count) {
     for (int i = 0; i < qd_count; i++) {
         free(dns_questions[i].domain);
         dns_questions[i].domain = NULL;
@@ -323,15 +324,15 @@ void free_dns_questions(DnsQuestion *dns_questions, const u_int16_t qd_count) {
 }
 
 int parse_dns_records(
-    const u_int8_t *buffer_ptr,
+    const uint8_t *buffer_ptr,
     DnsRecord *dns_record_ptr,
-    u_int16_t *records_buffer_end_index_ptr,
-    u_int16_t buffer_index,
-    const u_int16_t record_count
+    uint16_t *records_buffer_end_index_ptr,
+    uint16_t buffer_index,
+    const uint16_t record_count
 ) {
-    for (u_int16_t i = 0; i < record_count; i++) {
+    for (uint16_t i = 0; i < record_count; i++) {
         dns_record_ptr += i;
-        const u_int16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
+        const uint16_t domain_size = calc_domain_size(buffer_ptr, buffer_index);
         if (domain_size > MAX_DOMAIN_SIZE + 1) return -1;
         dns_record_ptr->domain = calloc(domain_size, sizeof(char));
         if (dns_record_ptr->domain == NULL) return -1;
@@ -356,14 +357,14 @@ int parse_dns_records(
 
 int dns_records_to_buffer(
     const DnsRecord *dns_records,
-    const u_int16_t records_count,
-    u_int8_t *buffer_ptr,
-    u_int16_t buffer_index,
-    u_int16_t *buffer_end_index_ptr
+    const uint16_t records_count,
+    uint8_t *buffer_ptr,
+    uint16_t buffer_index,
+    uint16_t *buffer_end_index_ptr
 ) {
-    for (u_int16_t i = 0; i < records_count; i++) {
-        u_int8_t domain_sequence_size = 0;
-        u_int8_t *domain_label_sequence = domain_to_label_sequence(dns_records[i].domain, &domain_sequence_size);
+    for (uint16_t i = 0; i < records_count; i++) {
+        uint8_t domain_sequence_size = 0;
+        uint8_t *domain_label_sequence = domain_to_label_sequence(dns_records[i].domain, &domain_sequence_size);
         if (domain_label_sequence == NULL) return -1;
         if (domain_sequence_size + buffer_index + 1 > MAX_DNS_MESSAGE_SIZE) {
             free(domain_label_sequence);
@@ -372,13 +373,13 @@ int dns_records_to_buffer(
         memcpy(buffer_ptr + buffer_index, domain_label_sequence, domain_sequence_size);
         free(domain_label_sequence);
         buffer_index += domain_sequence_size;
-        u_int16_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].r_type);
+        uint16_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].r_type);
         buffer_index += 2;
-        u_int16_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].r_class);
+        uint16_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].r_class);
         buffer_index += 2;
-        u_int32_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].ttl);
+        uint32_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].ttl);
         buffer_index += 4;
-        u_int16_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].rd_length);
+        uint16_to_big_endian_chars(buffer_ptr + buffer_index, dns_records[i].rd_length);
         buffer_index += 2;
         if (dns_records->rd_length + buffer_index + 1 > MAX_DNS_MESSAGE_SIZE) return -1;
         memcpy(buffer_ptr + buffer_index, dns_records->r_data, dns_records->rd_length);
@@ -388,7 +389,7 @@ int dns_records_to_buffer(
     return 0;
 }
 
-void free_dns_records(DnsRecord *dns_records, const u_int16_t record_count) {
+void free_dns_records(DnsRecord *dns_records, const uint16_t record_count) {
     for (int i = 0; i < record_count; i++) {
         free(dns_records[i].domain);
         dns_records[i].domain = NULL;
@@ -397,23 +398,23 @@ void free_dns_records(DnsRecord *dns_records, const u_int16_t record_count) {
     }
 }
 
-static u_int16_t big_endian_chars_to_u_int16(const u_int8_t *big_endian_chars_ptr) {
+static uint16_t big_endian_chars_to_u_int16(const uint8_t *big_endian_chars_ptr) {
     return big_endian_chars_ptr[0] * 256 + big_endian_chars_ptr[1];
 }
 
-static void u_int16_to_big_endian_chars(u_int8_t *big_endian_chars_ptr, const u_int16_t value) {
+static void uint16_to_big_endian_chars(uint8_t *big_endian_chars_ptr, const uint16_t value) {
     big_endian_chars_ptr[1] = value % 256;
     big_endian_chars_ptr[0] = (value - big_endian_chars_ptr[1]) / 256;
 }
 
-static u_int16_t big_endian_chars_to_u_int32(const u_int8_t *big_endian_chars_ptr) {
+static uint16_t big_endian_chars_to_u_int32(const uint8_t *big_endian_chars_ptr) {
     return big_endian_chars_ptr[0] * 16777216
            + big_endian_chars_ptr[1] * 65536
            + big_endian_chars_ptr[2] * 256
            + big_endian_chars_ptr[3];
 }
 
-static void u_int32_to_big_endian_chars(u_int8_t *big_endian_chars_ptr, const u_int32_t value) {
+static void uint32_to_big_endian_chars(uint8_t *big_endian_chars_ptr, const uint32_t value) {
     big_endian_chars_ptr[3] = value % 256;
     big_endian_chars_ptr[2] = (value - big_endian_chars_ptr[3]) % 65536 / 256;
     big_endian_chars_ptr[1] = (value - big_endian_chars_ptr[3] - big_endian_chars_ptr[2] * 256) % 16777216 / 65536;
@@ -421,14 +422,14 @@ static void u_int32_to_big_endian_chars(u_int8_t *big_endian_chars_ptr, const u_
                                * 65536) / 16777216;
 }
 
-static u_int16_t calc_domain_size(const u_int8_t *buffer_ptr, u_int16_t buffer_index) {
-    u_int16_t domain_length = 0;
-    u_int8_t segment_indicator = buffer_ptr[buffer_index];
+static uint16_t calc_domain_size(const uint8_t *buffer_ptr, uint16_t buffer_index) {
+    uint16_t domain_length = 0;
+    uint8_t segment_indicator = buffer_ptr[buffer_index];
     buffer_index++;
     while (segment_indicator > 0) {
         if (segment_indicator & QUESTION_PTR_BYTE_MASK) {
-            const u_int16_t offset = big_endian_chars_to_u_int16(
-                (u_int8_t[2]){
+            const uint16_t offset = big_endian_chars_to_u_int16(
+                (uint8_t[2]){
                     segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK,
                     buffer_ptr[buffer_index]
                 }
@@ -450,20 +451,20 @@ static u_int16_t calc_domain_size(const u_int8_t *buffer_ptr, u_int16_t buffer_i
 }
 
 static void retrieve_domain(
-    const u_int8_t *buffer_ptr,
-    u_int16_t buffer_index,
+    const uint8_t *buffer_ptr,
+    uint16_t buffer_index,
     char *domain_ptr,
-    u_int16_t *domain_end_ptr
+    uint16_t *domain_end_ptr
 ) {
-    u_int16_t domain_index = 0;
+    uint16_t domain_index = 0;
     // caches buffer index when buffer index is set to domain pointer
-    u_int16_t domain_pointer_end_index = 0;
-    u_int8_t segment_indicator = buffer_ptr[buffer_index];
+    uint16_t domain_pointer_end_index = 0;
+    uint8_t segment_indicator = buffer_ptr[buffer_index];
     buffer_index++;
     while (segment_indicator > 0) {
         if (segment_indicator & QUESTION_PTR_BYTE_MASK) {
-            const u_int16_t offset = big_endian_chars_to_u_int16(
-                (u_int8_t[2]){
+            const uint16_t offset = big_endian_chars_to_u_int16(
+                (uint8_t[2]){
                     segment_indicator & QUESTION_PTR_OFFSET_BYTE_MASK,
                     buffer_ptr[buffer_index]
                 }
@@ -489,13 +490,13 @@ static void retrieve_domain(
     *domain_end_ptr = buffer_index - 1;
 }
 
-static u_int8_t *domain_to_label_sequence(const char *domain_ptr, u_int8_t *domain_sequence_size_ptr) {
-    const u_int8_t max_label_sequence_size = MAX_DOMAIN_SIZE + 1;
-    u_int8_t *label_sequence = calloc(max_label_sequence_size, sizeof(char));
+static uint8_t *domain_to_label_sequence(const char *domain_ptr, uint8_t *domain_sequence_size_ptr) {
+    const uint8_t max_label_sequence_size = MAX_DOMAIN_SIZE + 1;
+    uint8_t *label_sequence = calloc(max_label_sequence_size, sizeof(char));
     if (label_sequence == NULL) return NULL;
-    u_int8_t sequence_index = 0;
-    u_int8_t domain_index = 1;
-    u_int8_t label_size = 1;
+    uint8_t sequence_index = 0;
+    uint8_t domain_index = 1;
+    uint8_t label_size = 1;
     while (domain_ptr[domain_index - 1] != STRING_END) {
         if (domain_ptr[domain_index] == DOMAIN_SEPARATOR || domain_ptr[domain_index] == STRING_END) {
             label_sequence[sequence_index] = label_size;

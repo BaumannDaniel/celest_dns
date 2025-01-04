@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <stdlib.h>
 
 #include "celest_dns.h"
 
@@ -29,7 +30,7 @@ static const DnsHeader dns_header_template = {
 
 typedef struct CliConfig {
     char *server;
-    u_int16_t port;
+    uint16_t port;
     char *domain;
 } CliConfig;
 
@@ -38,8 +39,8 @@ int send_dns_query(
     const DnsMessage *query_dns_message,
     DnsMessage *response_dns_message
 ) {
-    u_int16_t dns_message_buffer_size = 0;
-    const u_int8_t *dns_message_buffer = dns_message_to_buffer(query_dns_message, &dns_message_buffer_size);
+    uint16_t dns_message_buffer_size = 0;
+    const uint8_t *dns_message_buffer = dns_message_to_buffer(query_dns_message, &dns_message_buffer_size);
     if (dns_message_buffer == NULL) {
         return -1;
     }
@@ -69,7 +70,7 @@ int send_dns_query(
         return -1;
     }
     if (poll_fd.revents & POLL_EVENTS_BYTE_MASK) {
-        u_int8_t response_buffer[MAX_DNS_MESSAGE_SIZE] = {0};
+        uint8_t response_buffer[MAX_DNS_MESSAGE_SIZE] = {0};
         const ssize_t n_read_bytes = recvfrom(udp_socket, response_buffer, MAX_DNS_MESSAGE_SIZE, 0, NULL, NULL);
         if (n_read_bytes < DNS_HEADER_SIZE) {
             printf("Failed reading response from socket!\n");
@@ -169,7 +170,7 @@ int main(const int argc, char *argv[]) {
     };
     DnsMessage dns_response_ipv4;
     DnsMessage dns_response_ipv6;
-    u_int32_t server_ip;
+    uint32_t server_ip;
     if (inet_pton(AF_INET, cli_config.server, &server_ip) != 1) {
         printf("Invalid server ip!");
         return -1;

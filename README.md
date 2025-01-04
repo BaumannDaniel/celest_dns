@@ -22,7 +22,7 @@ as defined in [RFC1886 2.1](https://datatracker.ietf.org/doc/html/rfc1886#sectio
 Function that can be used to only parse the header section of a dns message, from a byte array.
 
 ```c
-const u_int8_t *dns_message_buffer = ...;
+const uint8_t *dns_message_buffer = ...;
 DnsHeader dns_header;
 parse_dns_header(dns_message_buffer, &dns_header);
 ```
@@ -33,7 +33,7 @@ Function that can be used to fully parse a dns message from a byte array.
 The function will return 0 if parsing the message succeeded, otherwise it will return -1;
 
 ```c
-const u_int8_t *dns_message_buffer = ...;
+const uint8_t *dns_message_buffer = ...;
 DnsMessage dns_message;
 int parseResult = parse_dns_message(dns_message_buffer, &dns_message);
 ...
@@ -53,8 +53,8 @@ The function also takes a pointer **buffer_size_ptr**, which, if not NULL, will 
 
 ```c
 DnsMessage dns_message = ...;
-u_int16_t dns_message_buffer_size = 0;
-const u_int8_t *dns_message_buffer = dns_message_to_buffer(query_dns_message, &dns_message_buffer_size);
+uint16_t dns_message_buffer_size = 0;
+const uint8_t *dns_message_buffer = dns_message_to_buffer(query_dns_message, &dns_message_buffer_size);
 ...
 free(dns_message_buffer);
 ```

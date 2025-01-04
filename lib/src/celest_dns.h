@@ -1,23 +1,23 @@
 #ifndef COMPASS_DNS_H
 #define COMPASS_DNS_H
 
-#include <stdlib.h>
+#include <stdint.h>
 
 #define DNS_HEADER_SIZE 12
 #define MAX_DOMAIN_SIZE 253
 #define MAX_DNS_MESSAGE_SIZE 512
 
-const static u_int8_t QR_BYTE_MASK = 0b10000000;
-const static u_int8_t OPCODE_BYTE_MASK = 0b01111000;
-const static u_int8_t AA_BYTE_MASK = 0b00000100;
-const static u_int8_t TC_BYTE_MASK = 0b00000010;
-const static u_int8_t RD_BYTE_MASK = 0b00000001;
-const static u_int8_t RA_BYTE_MASK = 0b10000000;
-const static u_int8_t Z_BYTE_MASK = 0b01110000;
-const static u_int8_t RCODE_BYTE_MASK = 0b00001111;
+const static uint8_t QR_BYTE_MASK = 0b10000000;
+const static uint8_t OPCODE_BYTE_MASK = 0b01111000;
+const static uint8_t AA_BYTE_MASK = 0b00000100;
+const static uint8_t TC_BYTE_MASK = 0b00000010;
+const static uint8_t RD_BYTE_MASK = 0b00000001;
+const static uint8_t RA_BYTE_MASK = 0b10000000;
+const static uint8_t Z_BYTE_MASK = 0b01110000;
+const static uint8_t RCODE_BYTE_MASK = 0b00001111;
 
-const static u_int8_t QUESTION_PTR_BYTE_MASK = 0b11000000;
-const static u_int8_t QUESTION_PTR_OFFSET_BYTE_MASK = 0b00111111;
+const static uint8_t QUESTION_PTR_BYTE_MASK = 0b11000000;
+const static uint8_t QUESTION_PTR_OFFSET_BYTE_MASK = 0b00111111;
 
 typedef enum OperationCode {
     OC_QUERY = 0,
@@ -73,34 +73,34 @@ typedef enum QClass {
 } QClass;
 
 typedef struct DnsHeader {
-    u_int16_t id;
-    u_int8_t qr;
-    u_int8_t opcode;
-    u_int8_t aa;
-    u_int8_t tc;
-    u_int8_t rd;
-    u_int8_t ra;
-    u_int8_t z;
-    u_int8_t rcode;
-    u_int16_t qd_count;
-    u_int16_t an_count;
-    u_int16_t ns_count;
-    u_int16_t ar_count;
+    uint16_t id;
+    uint8_t qr;
+    uint8_t opcode;
+    uint8_t aa;
+    uint8_t tc;
+    uint8_t rd;
+    uint8_t ra;
+    uint8_t z;
+    uint8_t rcode;
+    uint16_t qd_count;
+    uint16_t an_count;
+    uint16_t ns_count;
+    uint16_t ar_count;
 } DnsHeader;
 
 typedef struct DnsQuestion {
     char *domain;
-    u_int16_t q_type;
-    u_int16_t q_class;
+    uint16_t q_type;
+    uint16_t q_class;
 } DnsQuestion;
 
 typedef struct DnsRecord {
     char *domain;
-    u_int16_t r_type;
-    u_int16_t r_class;
-    u_int32_t ttl;
-    u_int16_t rd_length;
-    u_int8_t *r_data;
+    uint16_t r_type;
+    uint16_t r_class;
+    uint32_t ttl;
+    uint16_t rd_length;
+    uint8_t *r_data;
 } DnsRecord;
 
 typedef struct DnsMessage {
@@ -111,11 +111,11 @@ typedef struct DnsMessage {
     DnsRecord *additional;
 } DnsMessage;
 
-void parse_dns_header(const u_int8_t *buffer_ptr, DnsHeader *dns_header_ptr);
+void parse_dns_header(const uint8_t *buffer_ptr, DnsHeader *dns_header_ptr);
 
-int parse_dns_message(const u_int8_t *buffer_ptr, DnsMessage *dns_message_ptr);
+int parse_dns_message(const uint8_t *buffer_ptr, DnsMessage *dns_message_ptr);
 
-u_int8_t *dns_message_to_buffer(const DnsMessage *dns_message, u_int16_t *buffer_size_ptr);
+uint8_t *dns_message_to_buffer(const DnsMessage *dns_message, uint16_t *buffer_size_ptr);
 
 void free_dns_message(DnsMessage *dns_message);
 
