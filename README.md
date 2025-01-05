@@ -10,6 +10,16 @@ git submodule update --init --recursive
 cmake --preset dev
 ```
 
+**Build dev build**
+```
+cmake --build --preset dev
+```
+
+**Run Tests**
+```
+ctest --preset test-dev
+```
+
 # Project Structure
 
 The project is split into a dns parser found under /lib and a small command line tool, found under /cli,
@@ -101,5 +111,6 @@ celest_cli -d facebook.com -s 76.76.2.0 -p 53
 ### TODOS:
 
 - support windows
+- add help flag
 - supports IPv6 dns server ips
 - use same socket for ipv4 and ipv6 query
