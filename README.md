@@ -3,6 +3,30 @@
 The project is split into a dns parser found under /lib and a small command line tool, found under /cli,
 demonstrating the usage of the parser
 
+# Build
+
+Requirements: a C compiler (e.g. gcc), CMake (>= 3.28) and Ninja.
+
+The tests use [Unity](https://github.com/ThrowTheSwitch/Unity), which is included as a git submodule.
+Fetch it after cloning (or clone with `--recurse-submodules`):
+
+```
+git submodule update --init --recursive
+```
+
+Configure and build the project using the `dev` preset (Debug build, output in `build-dev/`):
+
+```
+cmake --preset dev
+cmake --build build-dev
+```
+
+### Run tests
+
+```
+ctest --test-dir build-dev --output-on-failure
+```
+
 # lib
 
 The lib holds a single header file. It defines several functions, structs and enums,
