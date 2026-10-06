@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -55,24 +56,30 @@ int send_dns_query(
         return -1;
     }
 
-    struct pollfd poll_fd;
-    poll_fd.fd = udp_socket;
-    poll_fd.events = POLL_EVENTS_BYTE_MASK;
-    poll_fd.revents = 0;
-    poll(&poll_fd, 1, REQUEST_TIMEOUT);
-    if (poll_fd.revents & POLL_ERROR_BYTE_MASK) {
-        printf("Socket failure while awaiting response!\n");
-        return -1;
-    }
-    if (!(poll_fd.revents & POLL_EVENTS_BYTE_MASK)) {
-        printf("Dns Query timed out!\n");
-        return -1;
-    }
     u_int8_t response_buffer[MAX_DNS_MESSAGE_SIZE] = {0};
-    const ssize_t n_read_bytes = recvfrom(udp_socket, response_buffer, MAX_DNS_MESSAGE_SIZE, 0, NULL, NULL);
-    if (n_read_bytes < DNS_HEADER_SIZE) {
-        printf("Failed reading response from socket!\n");
-        return -1;
+    while (true) {
+        struct pollfd poll_fd;
+        poll_fd.fd = udp_socket;
+        poll_fd.events = POLL_EVENTS_BYTE_MASK;
+        poll_fd.revents = 0;
+        poll(&poll_fd, 1, REQUEST_TIMEOUT);
+        if (poll_fd.revents & POLL_ERROR_BYTE_MASK) {
+            printf("Socket failure while awaiting response!\n");
+            return -1;
+        }
+        if (!(poll_fd.revents & POLL_EVENTS_BYTE_MASK)) {
+            printf("Dns Query timed out!\n");
+            return -1;
+        }
+        const ssize_t n_read_bytes = recvfrom(udp_socket, response_buffer, MAX_DNS_MESSAGE_SIZE, 0, NULL, NULL);
+        if (n_read_bytes < DNS_HEADER_SIZE) {
+            printf("Failed reading response from socket!\n");
+            return -1;
+        }
+        DnsHeader response_header;
+        parse_dns_header(response_buffer, &response_header);
+        if (response_header.id == query_dns_message->header.id) break;
+        // response to an earlier (e.g. timed out) query, ignore it and keep waiting
     }
     const int parse_result = parse_dns_message(response_buffer, response_dns_message);
     if (parse_result < 0) {
@@ -156,8 +163,10 @@ int main(const int argc, char *argv[]) {
         .header = dns_header,
         .questions = dns_questions_ipv4
     };
+    DnsHeader dns_header_ipv6 = dns_header;
+    dns_header_ipv6.id = dns_header.id + 1; // distinct id, so responses can be matched to their query
     const DnsMessage dns_query_ipv6 = {
-        .header = dns_header,
+        .header = dns_header_ipv6,
         .questions = dns_questions_ipv6
     };
     DnsMessage dns_response_ipv4;
