@@ -37,7 +37,8 @@ typedef struct CliConfig {
 
 int send_dns_query(
     const int udp_socket,
-    const struct sockaddr_in *dns_server_addr,
+    const struct sockaddr_storage *dns_server_addr,
+    const socklen_t dns_server_addr_len,
     const DnsMessage *query_dns_message,
     DnsMessage *response_dns_message
 ) {
@@ -48,7 +49,7 @@ int send_dns_query(
     }
     const ssize_t n_sent_bytes = sendto(
         udp_socket, dns_message_buffer, dns_message_buffer_size,
-        0, (const struct sockaddr *) dns_server_addr, sizeof(*dns_server_addr)
+        0, (const struct sockaddr *) dns_server_addr, dns_server_addr_len
     );
     free((void *) dns_message_buffer);
     if (n_sent_bytes < 0) {
@@ -98,15 +99,15 @@ void print_dns_response(
     printf("IPv4-Addresses:\n");
     for (int i = 0; i < dns_message_ipv4->header.an_count; i++) {
         if (dns_message_ipv4->answers[i].r_type != TYPE_A) continue;
-        char ip_string[16] = {0};
-        inet_ntop(AF_INET, dns_message_ipv4->answers[i].r_data, ip_string, 40);
+        char ip_string[INET_ADDRSTRLEN] = {0};
+        inet_ntop(AF_INET, dns_message_ipv4->answers[i].r_data, ip_string, sizeof(ip_string));
         printf("    - %s\n", ip_string);
     }
     printf("IPv6-Addresses:\n");
     for (int i = 0; i < dns_message_ipv6->header.an_count; i++) {
         if (dns_message_ipv6->answers[i].r_type != TYPE_AAAA) continue;
-        char ip_string[40] = {0};
-        inet_ntop(AF_INET6, dns_message_ipv6->answers[i].r_data, ip_string, 40);
+        char ip_string[INET6_ADDRSTRLEN] = {0};
+        inet_ntop(AF_INET6, dns_message_ipv6->answers[i].r_data, ip_string, sizeof(ip_string));
         printf("    - %s\n", ip_string);
     }
 }
@@ -171,26 +172,32 @@ int main(const int argc, char *argv[]) {
     };
     DnsMessage dns_response_ipv4;
     DnsMessage dns_response_ipv6;
-    u_int32_t server_ip;
-    if (inet_pton(AF_INET, cli_config.server, &server_ip) != 1) {
-        printf("Invalid server ip!");
+    struct sockaddr_storage dns_server_addr = {0};
+    socklen_t dns_server_addr_len;
+    struct sockaddr_in *addr_v4 = (struct sockaddr_in *) &dns_server_addr;
+    struct sockaddr_in6 *addr_v6 = (struct sockaddr_in6 *) &dns_server_addr;
+    if (inet_pton(AF_INET, cli_config.server, &addr_v4->sin_addr) == 1) {
+        addr_v4->sin_family = AF_INET;
+        addr_v4->sin_port = htons(cli_config.port);
+        dns_server_addr_len = sizeof(*addr_v4);
+    } else if (inet_pton(AF_INET6, cli_config.server, &addr_v6->sin6_addr) == 1) {
+        addr_v6->sin6_family = AF_INET6;
+        addr_v6->sin6_port = htons(cli_config.port);
+        dns_server_addr_len = sizeof(*addr_v6);
+    } else {
+        printf("Invalid server ip!\n");
         return -1;
     }
-    const struct sockaddr_in dns_server_addr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(cli_config.port),
-        .sin_addr = {server_ip}
-    };
-    const int udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    const int udp_socket = socket(dns_server_addr.ss_family, SOCK_DGRAM, 0);
     if (udp_socket < 0) {
         printf("Failed to create udp socket!\n");
         return -1;
     }
-    if (send_dns_query(udp_socket, &dns_server_addr, &dns_query_ipv4, &dns_response_ipv4) < 0) {
+    if (send_dns_query(udp_socket, &dns_server_addr, dns_server_addr_len, &dns_query_ipv4, &dns_response_ipv4) < 0) {
         close(udp_socket);
         return -1;
     }
-    if (send_dns_query(udp_socket, &dns_server_addr, &dns_query_ipv6, &dns_response_ipv6) < 0) {
+    if (send_dns_query(udp_socket, &dns_server_addr, dns_server_addr_len, &dns_query_ipv6, &dns_response_ipv6) < 0) {
         free_dns_message(&dns_response_ipv4);
         close(udp_socket);
         return -1;

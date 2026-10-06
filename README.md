@@ -98,8 +98,7 @@ for queries.
 
 [required]\
 **-d**: the domain name that shall be resolved\
-**-s**: the ip of the dns server in dotted-decimal format [xxx.xxx.xxx.xxx].
-Currently limited to Ipv4 addresses\
+**-s**: the ip of the dns server, either Ipv4 [xxx.xxx.xxx.xxx] or Ipv6 [e.g. 2001:4860:4860::8888]\
 
 [optional]\
 **-p**: The port used by the dns server [default = 53]
@@ -110,6 +109,3 @@ Currently limited to Ipv4 addresses\
 celest_cli -d facebook.com -s 76.76.2.0 -p 53
 ```
 
-### TODOS:
-
-- supports IPv6 dns server ips
