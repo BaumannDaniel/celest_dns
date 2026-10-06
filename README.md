@@ -89,4 +89,3 @@ celest_cli -d facebook.com -s 76.76.2.0 -p 53
 ### TODOS:
 
 - supports IPv6 dns server ips
-- use same socket for ipv4 and ipv6 query
