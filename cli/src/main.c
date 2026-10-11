@@ -1,5 +1,7 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
 #include <sys/socket.h>
@@ -34,7 +36,9 @@ typedef struct CliConfig {
 } CliConfig;
 
 int send_dns_query(
-    const struct sockaddr_in *dns_server_addr,
+    const int udp_socket,
+    const struct sockaddr_storage *dns_server_addr,
+    const socklen_t dns_server_addr_len,
     const DnsMessage *query_dns_message,
     DnsMessage *response_dns_message
 ) {
@@ -43,49 +47,46 @@ int send_dns_query(
     if (dns_message_buffer == NULL) {
         return -1;
     }
-    const int udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udp_socket < 0) {
-        printf("Failed to create udp socket!\n");
-        return -1;
-    }
-
-    if (
-        sendto(
-            udp_socket, dns_message_buffer, dns_message_buffer_size,
-            0, (struct sockaddr *) dns_server_addr, sizeof(*dns_server_addr)
-        ) < 0
-    ) {
-        close(udp_socket);
+    const ssize_t n_sent_bytes = sendto(
+        udp_socket, dns_message_buffer, dns_message_buffer_size,
+        0, (const struct sockaddr *) dns_server_addr, dns_server_addr_len
+    );
+    free((void *) dns_message_buffer);
+    if (n_sent_bytes < 0) {
         printf("Failed to send dns query!\n");
         return -1;
     }
-    struct pollfd poll_fd;
-    poll_fd.fd = udp_socket;
-    poll_fd.events = POLL_EVENTS_BYTE_MASK;
-    poll(&poll_fd, 1, REQUEST_TIMEOUT);
-    if (poll_fd.revents & POLL_ERROR_BYTE_MASK) {
-        printf("Socket failure while awaiting response!\n");
-        close(udp_socket);
-        return -1;
-    }
-    if (poll_fd.revents & POLL_EVENTS_BYTE_MASK) {
-        u_int8_t response_buffer[MAX_DNS_MESSAGE_SIZE] = {0};
+
+    u_int8_t response_buffer[MAX_DNS_MESSAGE_SIZE] = {0};
+    while (true) {
+        struct pollfd poll_fd;
+        poll_fd.fd = udp_socket;
+        poll_fd.events = POLL_EVENTS_BYTE_MASK;
+        poll_fd.revents = 0;
+        poll(&poll_fd, 1, REQUEST_TIMEOUT);
+        if (poll_fd.revents & POLL_ERROR_BYTE_MASK) {
+            printf("Socket failure while awaiting response!\n");
+            return -1;
+        }
+        if (!(poll_fd.revents & POLL_EVENTS_BYTE_MASK)) {
+            printf("Dns Query timed out!\n");
+            return -1;
+        }
         const ssize_t n_read_bytes = recvfrom(udp_socket, response_buffer, MAX_DNS_MESSAGE_SIZE, 0, NULL, NULL);
         if (n_read_bytes < DNS_HEADER_SIZE) {
             printf("Failed reading response from socket!\n");
-            close(udp_socket);
             return -1;
         }
-        close(udp_socket);
-        const int parse_result = parse_dns_message(response_buffer, response_dns_message);
-        if (parse_result < 0) {
-            printf("Failed to parse returned dns message!\n");
-        }
-        return parse_result;
+        DnsHeader response_header;
+        parse_dns_header(response_buffer, &response_header);
+        if (response_header.id == query_dns_message->header.id) break;
+        // response to an earlier (e.g. timed out) query, ignore it and keep waiting
     }
-    printf("Dns Query timed out!\n");
-    close(udp_socket);
-    return -1;
+    const int parse_result = parse_dns_message(response_buffer, response_dns_message);
+    if (parse_result < 0) {
+        printf("Failed to parse returned dns message!\n");
+    }
+    return parse_result;
 }
 
 void print_dns_response(
@@ -98,15 +99,15 @@ void print_dns_response(
     printf("IPv4-Addresses:\n");
     for (int i = 0; i < dns_message_ipv4->header.an_count; i++) {
         if (dns_message_ipv4->answers[i].r_type != TYPE_A) continue;
-        char ip_string[16] = {0};
-        inet_ntop(AF_INET, dns_message_ipv4->answers[i].r_data, ip_string, 40);
+        char ip_string[INET_ADDRSTRLEN] = {0};
+        inet_ntop(AF_INET, dns_message_ipv4->answers[i].r_data, ip_string, sizeof(ip_string));
         printf("    - %s\n", ip_string);
     }
     printf("IPv6-Addresses:\n");
     for (int i = 0; i < dns_message_ipv6->header.an_count; i++) {
         if (dns_message_ipv6->answers[i].r_type != TYPE_AAAA) continue;
-        char ip_string[40] = {0};
-        inet_ntop(AF_INET6, dns_message_ipv6->answers[i].r_data, ip_string, 40);
+        char ip_string[INET6_ADDRSTRLEN] = {0};
+        inet_ntop(AF_INET6, dns_message_ipv6->answers[i].r_data, ip_string, sizeof(ip_string));
         printf("    - %s\n", ip_string);
     }
 }
@@ -163,24 +164,45 @@ int main(const int argc, char *argv[]) {
         .header = dns_header,
         .questions = dns_questions_ipv4
     };
+    DnsHeader dns_header_ipv6 = dns_header;
+    dns_header_ipv6.id = dns_header.id + 1; // distinct id, so responses can be matched to their query
     const DnsMessage dns_query_ipv6 = {
-        .header = dns_header,
+        .header = dns_header_ipv6,
         .questions = dns_questions_ipv6
     };
     DnsMessage dns_response_ipv4;
     DnsMessage dns_response_ipv6;
-    u_int32_t server_ip;
-    if (inet_pton(AF_INET, cli_config.server, &server_ip) != 1) {
-        printf("Invalid server ip!");
+    struct sockaddr_storage dns_server_addr = {0};
+    socklen_t dns_server_addr_len;
+    struct sockaddr_in *addr_v4 = (struct sockaddr_in *) &dns_server_addr;
+    struct sockaddr_in6 *addr_v6 = (struct sockaddr_in6 *) &dns_server_addr;
+    if (inet_pton(AF_INET, cli_config.server, &addr_v4->sin_addr) == 1) {
+        addr_v4->sin_family = AF_INET;
+        addr_v4->sin_port = htons(cli_config.port);
+        dns_server_addr_len = sizeof(*addr_v4);
+    } else if (inet_pton(AF_INET6, cli_config.server, &addr_v6->sin6_addr) == 1) {
+        addr_v6->sin6_family = AF_INET6;
+        addr_v6->sin6_port = htons(cli_config.port);
+        dns_server_addr_len = sizeof(*addr_v6);
+    } else {
+        printf("Invalid server ip!\n");
         return -1;
     }
-    const struct sockaddr_in dns_server_addr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(cli_config.port),
-        .sin_addr = {server_ip}
-    };
-    if (send_dns_query(&dns_server_addr, &dns_query_ipv4, &dns_response_ipv4) < 0) return -1;
-    if (send_dns_query(&dns_server_addr, &dns_query_ipv6, &dns_response_ipv6) < 0) return -1;
+    const int udp_socket = socket(dns_server_addr.ss_family, SOCK_DGRAM, 0);
+    if (udp_socket < 0) {
+        printf("Failed to create udp socket!\n");
+        return -1;
+    }
+    if (send_dns_query(udp_socket, &dns_server_addr, dns_server_addr_len, &dns_query_ipv4, &dns_response_ipv4) < 0) {
+        close(udp_socket);
+        return -1;
+    }
+    if (send_dns_query(udp_socket, &dns_server_addr, dns_server_addr_len, &dns_query_ipv6, &dns_response_ipv6) < 0) {
+        free_dns_message(&dns_response_ipv4);
+        close(udp_socket);
+        return -1;
+    }
+    close(udp_socket);
     print_dns_response(&cli_config, &dns_response_ipv4, &dns_response_ipv6);
     free_dns_message(&dns_response_ipv4);
     free_dns_message(&dns_response_ipv6);
